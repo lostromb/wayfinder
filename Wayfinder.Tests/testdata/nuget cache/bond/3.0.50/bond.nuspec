@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+    <metadata>
+        <id>Bond</id>
+        <version>3.0.50.0</version>
+        <authors>coryro</authors>
+        <requireLicenseAcceptance>false</requireLicenseAcceptance>
+        <description>Bond is an extensible framework for working with schematized data. It is suitable for scenarios ranging from service communications to Big Data storage and processing.
+
+Bond defines a rich type system and schema versioning rules which allow forward and backward compatibility. The core Bond features include high performance de/serialization and service-oriented RPC. The framework is highly extensible via pluggable serialization protocols, network transports and more.
+
+By design Bond is language and platform independent and is currently supported for C++, C#, Java, F# and Python. The core of C++ implementation is platform agnostic and compiles with Visual C++, Clang and GNU C++. The RPC framework and network transports are currently only implemented for Windows.</description>
+        <tags>CAS Nova</tags>
+    </metadata>
+</package>
