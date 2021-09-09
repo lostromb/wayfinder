@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+    <RootNamespace>Wayfinder.DependencyResolver</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Update="NativeAssemblies.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>NativeAssemblies.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="NativeAssemblies.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>NativeAssemblies.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+
+</Project>
