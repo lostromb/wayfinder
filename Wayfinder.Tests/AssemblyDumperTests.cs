@@ -21,7 +21,7 @@ namespace Wayfinder.Tests
         public static void TestClassInitialize(TestContext context)
         {
             // Unpack test data folder
-            ZipFile.ExtractToDirectory("testdata.zip", Environment.CurrentDirectory);
+            ZipFile.ExtractToDirectory("testdata.zip", Environment.CurrentDirectory, true);
             ILogger logger = new ConsoleLogger();
             _inspector = new AssemblyInspector(logger);
         }
@@ -83,35 +83,29 @@ namespace Wayfinder.Tests
         [TestMethod]
         public void TestLoader_ManagedDllWithPInvoke()
         {
-            FileInfo inputFile = new FileInfo("testdata\\binaries\\NAudio.dll");
+            FileInfo inputFile = new FileInfo("testdata\\binaries\\ManagedBass.dll");
             AssemblyData parsedData = _inspector.InspectSingleAssembly(inputFile, null);
             Assert.IsNotNull(parsedData);
-            Assert.AreEqual("NAudio", parsedData.AssemblyBinaryName);
+            Assert.AreEqual("ManagedBass", parsedData.AssemblyBinaryName);
             Assert.AreEqual(inputFile.FullName, parsedData.AssemblyFilePath.FullName);
-            Assert.AreEqual("NAudio, Version=1.10.0.0, Culture=neutral, PublicKeyToken=null", parsedData.AssemblyFullName);
-            Assert.AreEqual("47bca47d9d12191811fb2e87cded3aa", parsedData.AssemblyHashMD5);
+            Assert.AreEqual("ManagedBass, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null", parsedData.AssemblyFullName);
+            Assert.AreEqual("ede0ea77961db40f8b244d777181be", parsedData.AssemblyHashMD5);
             Assert.AreEqual(BinaryType.Managed, parsedData.AssemblyType);
             Assert.AreEqual(BinaryPlatform.AnyCPU, parsedData.Platform);
-            Assert.AreEqual(new Version("1.10.0.0"), parsedData.AssemblyVersion);
+            Assert.AreEqual(new Version("1.0.0.0"), parsedData.AssemblyVersion);
             Assert.AreEqual("", parsedData.LoaderError);
             Assert.AreEqual(13, parsedData.ReferencedAssemblies.Count);
             Assert.IsTrue(parsedData.ReferencedAssemblies.Any((s) =>
                 s.ReferenceType == AssemblyReferenceType.Managed &&
-                s.ReferencedAssemblyVersion == new Version("3.5.0.0") &&
-                string.Equals(s.AssemblyBinaryName, "System.Core", StringComparison.OrdinalIgnoreCase)));
+                s.ReferencedAssemblyVersion == new Version("4.0.10.0") &&
+                string.Equals(s.AssemblyBinaryName, "System.IO", StringComparison.OrdinalIgnoreCase)));
             Assert.IsTrue(parsedData.ReferencedAssemblies.Any((s) =>
                 s.ReferenceType == AssemblyReferenceType.Managed &&
-                s.ReferencedAssemblyVersion == new Version("2.0.0.0") &&
-                string.Equals(s.AssemblyBinaryName, "System.Drawing", StringComparison.OrdinalIgnoreCase)));
+                s.ReferencedAssemblyVersion == new Version("4.0.10.0") &&
+                string.Equals(s.AssemblyBinaryName, "System.Text.Encoding", StringComparison.OrdinalIgnoreCase)));
             Assert.IsTrue(parsedData.ReferencedAssemblies.Any((s) =>
                 s.ReferenceType == AssemblyReferenceType.PInvoke &&
-                string.Equals(s.AssemblyBinaryName, "kernel32", StringComparison.OrdinalIgnoreCase)));
-            Assert.IsTrue(parsedData.ReferencedAssemblies.Any((s) =>
-                s.ReferenceType == AssemblyReferenceType.PInvoke &&
-                string.Equals(s.AssemblyBinaryName, "dsound", StringComparison.OrdinalIgnoreCase)));
-            Assert.IsTrue(parsedData.ReferencedAssemblies.Any((s) =>
-                s.ReferenceType == AssemblyReferenceType.PInvoke &&
-                string.Equals(s.AssemblyBinaryName, "ole32", StringComparison.OrdinalIgnoreCase)));
+                string.Equals(s.AssemblyBinaryName, "bass", StringComparison.OrdinalIgnoreCase)));
         }
 
         [TestMethod]
@@ -226,6 +220,7 @@ namespace Wayfinder.Tests
                 string.Equals(s.AssemblyBinaryName, "System.Core", StringComparison.OrdinalIgnoreCase)));
         }
 
+        [Ignore]
         [TestMethod]
         public void TestSandbox()
         {
