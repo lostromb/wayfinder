@@ -129,7 +129,7 @@ namespace Wayfinder.DependencyResolver.Nuget
             string returnVal;
             if (!_md5Cache.TryGetValue(fileName, out returnVal))
             {
-                MD5 hasher = new MD5Cng();
+                MD5 hasher = MD5.Create();
                 hasher.Initialize();
                 StringBuilder builder = new StringBuilder();
                 using (FileStream stream = new FileStream(fileName.FullName, FileMode.Open, FileAccess.Read))
@@ -143,6 +143,7 @@ namespace Wayfinder.DependencyResolver.Nuget
                 }
 
                 returnVal = builder.ToString().ToLowerInvariant();
+                _md5Cache.Add(fileName, returnVal);
             }
 
             return returnVal;

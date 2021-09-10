@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using OpenTK;
 using OpenTK.Graphics;
 using OpenTK.Graphics.OpenGL;
+using OpenTK.Mathematics;
 using OpenTK.Wpf;
 using QuickFont;
 using QuickFont.Configuration;
@@ -22,8 +23,9 @@ using Wayfinder.DependencyResolver.Nuget;
 using Wayfinder.DependencyResolver.Schemas;
 using Wayfinder.UI;
 using Wayfinder.UI.Schemas;
+using WayfinderUI;
 
-namespace WayfinderUI
+namespace Wayfinder.UI.NetCore
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
@@ -49,7 +51,7 @@ namespace WayfinderUI
 
         // zoom factor, linearly scaled
         private double _zoom = 1;
-        
+
         private bool _isHoldingRightMouse = false;
         private bool _isHoldingLeftMouse = false;
         private bool _isMovingComponent = false;
@@ -314,7 +316,7 @@ namespace WayfinderUI
                     bottom - (h * child.BaseComponent.Bounds.FromBottom));
             }
         }
-        
+
         private void InitializeGlResources()
         {
             GL.Hint(HintTarget.LineSmoothHint, HintMode.Fastest);
@@ -389,7 +391,7 @@ namespace WayfinderUI
                 // Clear font pixel buffer
                 _drawing.ProjectionMatrix = Matrix4.CreateOrthographicOffCenter(0, (float)Canvas.ActualWidth, 0, (float)Canvas.ActualHeight, -1, 1);
                 _drawing.DrawingPrimitives.Clear();
-                
+
                 UpdateUiComponentBounds(_uiComponents[_project.RootComponent.UniqueId]);
 
                 // Draw all connecting lines
@@ -397,7 +399,7 @@ namespace WayfinderUI
                 {
                     UIComponent originComponent = _uiComponents[pair.Key.A];
                     UIComponent destinationComponent = _uiComponents[pair.Key.B];
-                    
+
                     DrawConnectingLine(
                         originComponent,
                         destinationComponent,
@@ -422,7 +424,7 @@ namespace WayfinderUI
                 GL.Enable(EnableCap.Blend);
                 GL.UseProgram(0);
                 GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
-                
+
                 GL.BindTexture(TextureTarget.Texture2D, 0);
                 GL.Disable(EnableCap.Texture2D);
                 GL.Disable(EnableCap.Blend);
@@ -465,46 +467,46 @@ namespace WayfinderUI
                 {
                     // Check right and bottom edges
                     double rightY = origin.Y +
-                        ((originBounds.Right - origin.X) *
+                        ((originBounds.Max.X - origin.X) *
                         (destination.Y - origin.Y) /
                         (destination.X - origin.X));
                     double bottomX = origin.X +
-                        ((originBounds.Bottom - origin.Y) *
+                        ((originBounds.Max.Y - origin.Y) *
                         (destination.X - origin.X) /
                         (destination.Y - origin.Y));
 
-                    if (rightY < originBounds.Bottom)
+                    if (rightY < originBounds.Max.Y)
                     {
                         orientation = Orientation.Right;
-                        return new Point(originBounds.Right, rightY);
+                        return new Point(originBounds.Max.X, rightY);
                     }
                     else
                     {
                         orientation = Orientation.Down;
-                        return new Point(bottomX, originBounds.Bottom);
+                        return new Point(bottomX, originBounds.Max.Y);
                     }
                 }
                 else
                 {
                     // Check right and top edges
                     double rightY = origin.Y +
-                        ((originBounds.Right - origin.X) *
+                        ((originBounds.Max.X - origin.X) *
                         (destination.Y - origin.Y) /
                         (destination.X - origin.X));
                     double topX = origin.X +
-                        ((origin.Y - originBounds.Top) *
+                        ((origin.Y - originBounds.Min.Y) *
                         (destination.X - origin.X) /
                         (origin.Y - destination.Y));
 
-                    if (rightY > originBounds.Top)
+                    if (rightY > originBounds.Min.Y)
                     {
                         orientation = Orientation.Right;
-                        return new Point(originBounds.Right, rightY);
+                        return new Point(originBounds.Max.X, rightY);
                     }
                     else
                     {
                         orientation = Orientation.Up;
-                        return new Point(topX, originBounds.Top);
+                        return new Point(topX, originBounds.Min.Y);
                     }
                 }
             }
@@ -514,46 +516,46 @@ namespace WayfinderUI
                 {
                     // Check left and bottom edges
                     double leftY = origin.Y +
-                        ((origin.X - originBounds.Left) *
+                        ((origin.X - originBounds.Min.X) *
                         (destination.Y - origin.Y) /
                         (origin.X - destination.X));
                     double bottomX = origin.X +
-                        ((originBounds.Bottom - origin.Y) *
+                        ((originBounds.Max.Y - origin.Y) *
                         (destination.X - origin.X) /
                         (destination.Y - origin.Y));
 
-                    if (leftY < originBounds.Bottom)
+                    if (leftY < originBounds.Max.Y)
                     {
                         orientation = Orientation.Left;
-                        return new Point(originBounds.Left, leftY);
+                        return new Point(originBounds.Min.X, leftY);
                     }
                     else
                     {
                         orientation = Orientation.Down;
-                        return new Point(bottomX, originBounds.Bottom);
+                        return new Point(bottomX, originBounds.Max.Y);
                     }
                 }
                 else
                 {
                     // Check left and top edges
                     double leftY = origin.Y +
-                        ((origin.X - originBounds.Left) *
+                        ((origin.X - originBounds.Min.X) *
                         (destination.Y - origin.Y) /
                         (origin.X - destination.X));
                     double topX = origin.X +
-                        ((origin.Y - originBounds.Top) *
+                        ((origin.Y - originBounds.Min.Y) *
                         (destination.X - origin.X) /
                         (origin.Y - destination.Y));
 
-                    if (leftY > originBounds.Top)
+                    if (leftY > originBounds.Min.Y)
                     {
                         orientation = Orientation.Left;
-                        return new Point(originBounds.Left, leftY);
+                        return new Point(originBounds.Min.X, leftY);
                     }
                     else
                     {
                         orientation = Orientation.Down;
-                        return new Point(topX, originBounds.Top);
+                        return new Point(topX, originBounds.Min.Y);
                     }
                 }
             }
@@ -623,7 +625,7 @@ namespace WayfinderUI
                     _cachedLinePairs.Increment(pair);
                 }
             }
-            
+
             foreach (Guid childId in currentComponent.BaseComponent.Children)
             {
                 CalculateConnectingLinePairsRecursive(_uiComponents[childId], inheritanceChain);
@@ -634,11 +636,11 @@ namespace WayfinderUI
         {
             // Calculate the begin and endpoints of the line
             Point originCenter = new Point(
-                (currentComponent.AbsoluteBounds.Left + currentComponent.AbsoluteBounds.Right) / 2,
-                (currentComponent.AbsoluteBounds.Top + currentComponent.AbsoluteBounds.Bottom) / 2);
+                (currentComponent.AbsoluteBounds.Min.X + currentComponent.AbsoluteBounds.Max.X) / 2,
+                (currentComponent.AbsoluteBounds.Min.Y + currentComponent.AbsoluteBounds.Max.Y) / 2);
             Point destinationCenter = new Point(
-                (otherComponent.AbsoluteBounds.Left + otherComponent.AbsoluteBounds.Right) / 2,
-                (otherComponent.AbsoluteBounds.Top + otherComponent.AbsoluteBounds.Bottom) / 2);
+                (otherComponent.AbsoluteBounds.Min.X + otherComponent.AbsoluteBounds.Max.X) / 2,
+                (otherComponent.AbsoluteBounds.Min.Y + otherComponent.AbsoluteBounds.Max.Y) / 2);
 
             Orientation originOrientation;
             Orientation destinationOrientation;
@@ -712,14 +714,14 @@ namespace WayfinderUI
 
         private void DrawComponentRecursive(UIComponent currentComponent)
         {
-            double left = currentComponent.AbsoluteBounds.Left;
-            double right = currentComponent.AbsoluteBounds.Right;
-            double top = currentComponent.AbsoluteBounds.Top;
-            double bottom = currentComponent.AbsoluteBounds.Bottom;
+            double left = currentComponent.AbsoluteBounds.Min.X;
+            double right = currentComponent.AbsoluteBounds.Max.X;
+            double top = currentComponent.AbsoluteBounds.Min.Y;
+            double bottom = currentComponent.AbsoluteBounds.Max.Y;
 
             // How big is it on screen?
-            Point topLeftCornerOfComponentOnScreen = VirtualCoordToCanvasCoord(new Point(currentComponent.AbsoluteBounds.Left, currentComponent.AbsoluteBounds.Top));
-            Point bottomRightCornerOfComponentOnScreen = VirtualCoordToCanvasCoord(new Point(currentComponent.AbsoluteBounds.Right, currentComponent.AbsoluteBounds.Bottom));
+            Point topLeftCornerOfComponentOnScreen = VirtualCoordToCanvasCoord(new Point(currentComponent.AbsoluteBounds.Min.X, currentComponent.AbsoluteBounds.Min.Y));
+            Point bottomRightCornerOfComponentOnScreen = VirtualCoordToCanvasCoord(new Point(currentComponent.AbsoluteBounds.Max.X, currentComponent.AbsoluteBounds.Max.Y));
             bool isTiny = ((bottomRightCornerOfComponentOnScreen.X - topLeftCornerOfComponentOnScreen.X) < 30 ||
                 (bottomRightCornerOfComponentOnScreen.Y - topLeftCornerOfComponentOnScreen.Y) < 20);
             float alpha = currentComponent.IsFilteredOut ? 0.15f : 1.0f;
@@ -895,7 +897,7 @@ namespace WayfinderUI
                 GL.Vertex2(left, bottom);
             }
             GL.End();
-            
+
             // Draw the title if the box is wide enough
             // TODO use measurements to determine exact font bounds
             if (!isTiny && !currentComponent.IsFilteredOut)
@@ -931,12 +933,12 @@ namespace WayfinderUI
             {
                 return null;
             }
-            
+
             // Is the click within this pane?
-            if (clickPos.X >= root.AbsoluteBounds.Left &&
-                clickPos.X <= root.AbsoluteBounds.Right &&
-                clickPos.Y >= root.AbsoluteBounds.Top &&
-                clickPos.Y <= root.AbsoluteBounds.Bottom)
+            if (clickPos.X >= root.AbsoluteBounds.Min.X &&
+                clickPos.X <= root.AbsoluteBounds.Max.X &&
+                clickPos.Y >= root.AbsoluteBounds.Min.Y &&
+                clickPos.Y <= root.AbsoluteBounds.Max.Y)
             {
                 if (root.IsOpen)
                 {
@@ -1026,9 +1028,9 @@ namespace WayfinderUI
                 else
                 {
                     // Is it super tiny on our screen (50px or smaller)?
-                    Point topLeftCornerOfComponent = VirtualCoordToCanvasCoord(new Point(clickedComponent.AbsoluteBounds.Left, clickedComponent.AbsoluteBounds.Top));
-                    Point bottomRightCornerOfComponent = VirtualCoordToCanvasCoord(new Point(clickedComponent.AbsoluteBounds.Right, clickedComponent.AbsoluteBounds.Bottom));
-                    Point topRightCornerOfComponent = VirtualCoordToCanvasCoord(new Point(clickedComponent.AbsoluteBounds.Right, clickedComponent.AbsoluteBounds.Top));
+                    Point topLeftCornerOfComponent = VirtualCoordToCanvasCoord(new Point(clickedComponent.AbsoluteBounds.Min.X, clickedComponent.AbsoluteBounds.Min.Y));
+                    Point bottomRightCornerOfComponent = VirtualCoordToCanvasCoord(new Point(clickedComponent.AbsoluteBounds.Max.X, clickedComponent.AbsoluteBounds.Max.Y));
+                    Point topRightCornerOfComponent = VirtualCoordToCanvasCoord(new Point(clickedComponent.AbsoluteBounds.Max.X, clickedComponent.AbsoluteBounds.Min.Y));
                     if ((bottomRightCornerOfComponent.X - topLeftCornerOfComponent.X) < 50 ||
                         (bottomRightCornerOfComponent.Y - topLeftCornerOfComponent.Y) < 50)
                     {
@@ -1179,8 +1181,8 @@ namespace WayfinderUI
                 {
                     // User is dragging a single component around
                     UIComponent parentComponent = _uiComponents[_uiComponentBeingManipulated.BaseComponent.Parent];
-                    double deltaX = (clickPosition.X - _mouseDragStartCanvasCenterPoint.X) / Canvas.ActualHeight / parentComponent.AbsoluteBounds.Width;
-                    double deltaY = (clickPosition.Y - _mouseDragStartCanvasCenterPoint.Y) / Canvas.ActualHeight / parentComponent.AbsoluteBounds.Height;
+                    double deltaX = (clickPosition.X - _mouseDragStartCanvasCenterPoint.X) / Canvas.ActualHeight / parentComponent.AbsoluteBounds.Size.X;
+                    double deltaY = (clickPosition.Y - _mouseDragStartCanvasCenterPoint.Y) / Canvas.ActualHeight / parentComponent.AbsoluteBounds.Size.Y;
                     _uiComponentBeingManipulated.BaseComponent.Bounds.FromLeft = Math.Max(0, Math.Min(1 - _uiComponentBeingManipulatedOriginalBounds.Width, _uiComponentBeingManipulatedOriginalBounds.FromLeft + deltaX));
                     _uiComponentBeingManipulated.BaseComponent.Bounds.FromRight = Math.Max(0, Math.Min(1 - _uiComponentBeingManipulatedOriginalBounds.Width, _uiComponentBeingManipulatedOriginalBounds.FromRight - deltaX));
                     _uiComponentBeingManipulated.BaseComponent.Bounds.FromTop = Math.Max(0, Math.Min(1 - _uiComponentBeingManipulatedOriginalBounds.Height, _uiComponentBeingManipulatedOriginalBounds.FromTop + deltaY));
@@ -1191,8 +1193,8 @@ namespace WayfinderUI
                 {
                     // User is resizing a single component
                     UIComponent parentComponent = _uiComponents[_uiComponentBeingManipulated.BaseComponent.Parent];
-                    double deltaX = (clickPosition.X - _mouseDragStartCanvasCenterPoint.X) / Canvas.ActualHeight / parentComponent.AbsoluteBounds.Width;
-                    double deltaY = (clickPosition.Y - _mouseDragStartCanvasCenterPoint.Y) / Canvas.ActualHeight / parentComponent.AbsoluteBounds.Height;
+                    double deltaX = (clickPosition.X - _mouseDragStartCanvasCenterPoint.X) / Canvas.ActualHeight / parentComponent.AbsoluteBounds.Size.X;
+                    double deltaY = (clickPosition.Y - _mouseDragStartCanvasCenterPoint.Y) / Canvas.ActualHeight / parentComponent.AbsoluteBounds.Size.Y;
                     _uiComponentBeingManipulated.BaseComponent.Bounds.FromRight = Math.Max(0, Math.Min(0.99 - _uiComponentBeingManipulatedOriginalBounds.FromLeft, _uiComponentBeingManipulatedOriginalBounds.FromRight - deltaX));
                     _uiComponentBeingManipulated.BaseComponent.Bounds.FromBottom = Math.Max(0, Math.Min(0.99 - _uiComponentBeingManipulatedOriginalBounds.FromTop, _uiComponentBeingManipulatedOriginalBounds.FromBottom - deltaY));
                     UpdateUiComponentBounds(_uiComponentBeingManipulated);
@@ -1324,13 +1326,13 @@ namespace WayfinderUI
                         StatusLabel.Content = "File / directory not found: " + path;
                         return;
                     }
-                    
+
                     if (newProject == null || newProject.Components.Count <= 1)
                     {
                         StatusLabel.Content = "No assemblies found at " + path;
                         return;
                     }
-                    
+
                     StatusLabel.Content = "Succesfully loaded " + path;
                     Monitor.Enter(_mutex);
                     try
@@ -1534,7 +1536,7 @@ namespace WayfinderUI
                                 para.Inlines.Add(new System.Windows.Documents.LineBreak());
                                 para.Inlines.Add(new System.Windows.Documents.LineBreak());
                             }
-                            
+
                             para.Inlines.Add(new System.Windows.Documents.Run("VERSIONS IN USE:"));
                             foreach (Version dependentVersion in dependentVersions.OrderByDescending((x) => x))
                             {

@@ -329,9 +329,14 @@ namespace Wayfinder.DependencyResolver
                 yield break;
             }
 
+            ISet<NugetPackageIdentity> dedupedIdentities = new HashSet<NugetPackageIdentity>();
             foreach (NugetAssemblyResolutionResult result in results)
             {
-                yield return result.SourcePackage;
+                if (!dedupedIdentities.Contains(result.SourcePackage))
+                {
+                    dedupedIdentities.Add(result.SourcePackage);
+                    yield return result.SourcePackage;
+                }
             }
         }
 
@@ -424,21 +429,49 @@ namespace Wayfinder.DependencyResolver
             return returnVal;
         }
 
-        private static AssemblyData InspectSingleAssemblyWithAppDomain(FileInfo assemblyFile)
+        private AssemblyData InspectSingleAssemblyWithAppDomain(FileInfo assemblyFile)
         {
-            AppDomainSetup setup = new AppDomainSetup();
-            AppDomain domain = AppDomain.CreateDomain("AssemblyProbe_" + Guid.NewGuid().ToString("N").Substring(0, 8), null, setup);
-            try
+            WayfinderPluginLoadContext loadContext = new WayfinderPluginLoadContext(_logger, runtimeDirectory: new DirectoryInfo(Environment.CurrentDirectory), containerDirectory: assemblyFile.Directory);
+            AssemblyName assemblyName = typeof(AssemblyLoaderProxy).Assembly.GetName();
+            Assembly containerHostAssembly = loadContext.LoadFromAssemblyName(assemblyName);
+            if (containerHostAssembly == null)
             {
-                ObjectHandle handle = domain.CreateInstanceFrom(Assembly.GetExecutingAssembly().Location, typeof(AssemblyLoaderProxy).FullName);
-                AssemblyLoaderProxy proxy = (AssemblyLoaderProxy)handle.Unwrap();
-                byte[] serializedAssemblyData = proxy.Process(assemblyFile.FullName);
+                _logger.Log("Could not find entry point dll " + assemblyName + " to use to create load context guest.", LogLevel.Err);
+                return null;
+            }
+
+            string containerGuestTypeName = typeof(AssemblyLoaderProxy).FullName;
+            Type containerGuestType = containerHostAssembly.ExportedTypes.FirstOrDefault(t => string.Equals(t.FullName, containerGuestTypeName));
+            object containerGuest = Activator.CreateInstance(containerGuestType);
+            if (containerGuest == null)
+            {
+                _logger.Log("Error while creating remoting proxy to load context container.", LogLevel.Err);
+                return null;
+            }
+
+            // For some reason we run into troubles when just trying to cast the returned object as an IContainerGuest (probably because the defining assemblies of the interface are different).
+            // So we have to use reflection to find the initialization method and invoke it
+            MethodInfo initializeMethodSig = containerGuest.GetType().GetMethod(nameof(AssemblyLoaderProxy.Process), new Type[] { typeof(string) });
+            if (initializeMethodSig == null)
+            {
+                _logger.Log("Error while looking for Process method on load context container.", LogLevel.Err);
+                return null;
+            }
+
+            _logger.Log("Initializing load context guest for " + assemblyFile.FullName, LogLevel.Vrb);
+            // Make sure we set the AssemblyLoadContext.CurrentContextualReflectionContext at initialization
+            using (var scope = loadContext.EnterContextualReflection())
+            {
+                object? uncastReturnVal = initializeMethodSig.Invoke(containerGuest, new object[] { assemblyFile.FullName });
+                byte[] serializedAssemblyData = uncastReturnVal as byte[];
+                if (serializedAssemblyData == null)
+                {
+                    _logger.Log("Error while parsing response AssemblyData from remote container host.", LogLevel.Err);
+                    return null;
+                }
+
                 AssemblyData returnVal = AssemblyData.Deserialize(serializedAssemblyData);
                 return returnVal;
-            }
-            finally
-            {
-                AppDomain.Unload(domain);
             }
         }
     }

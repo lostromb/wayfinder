@@ -22,7 +22,6 @@ namespace Wayfinder.DependencyResolver
         public byte[] Process(string fileName)
         {
             List<string> nativeInspectionReport = new List<string>();
-            Assembly reflectionOnlyLoadFromAssembly = null;
             Assembly loadFromAssembly = null;
             ExceptionDispatchInfo loadException = null;
             bool isNativeDll = false;
@@ -40,18 +39,7 @@ namespace Wayfinder.DependencyResolver
 
                 try
                 {
-                    // Try to load reflection-only first
-                    reflectionOnlyLoadFromAssembly = Assembly.ReflectionOnlyLoadFrom(fileName);
-
-                    try
-                    {
-                        // Then try to load fully
-                        loadFromAssembly = Assembly.LoadFrom(fileName);
-                    }
-                    catch (Exception e)
-                    {
-                        loadException = ExceptionDispatchInfo.Capture(e);
-                    }
+                    loadFromAssembly = Assembly.LoadFrom(fileName);
                 }
                 catch (Exception e)
                 {
@@ -72,7 +60,7 @@ namespace Wayfinder.DependencyResolver
                 }
                 else
                 {
-                    UpdateManagedDllInfo(returnVal, loadFromAssembly, reflectionOnlyLoadFromAssembly, loadException);
+                    UpdateManagedDllInfo(returnVal, loadFromAssembly, loadException);
                 }
             }
 
@@ -81,7 +69,7 @@ namespace Wayfinder.DependencyResolver
 
         private static string GetMD5HashOfFile(string fileName)
         {
-            MD5 hasher = new MD5Cng();
+            MD5 hasher = MD5.Create();
             hasher.Initialize();
             StringBuilder returnVal = new StringBuilder();
             using (FileStream stream = new FileStream(fileName, FileMode.Open, FileAccess.Read))
@@ -164,23 +152,22 @@ namespace Wayfinder.DependencyResolver
         private static void UpdateManagedDllInfo(
             AssemblyData returnVal,
             Assembly loadFromAssembly,
-            Assembly reflectionOnlyLoadFromAssembly,
             ExceptionDispatchInfo loadException)
         {
-            if (reflectionOnlyLoadFromAssembly == null)
+            if (loadFromAssembly == null)
             {
                 returnVal.LoaderError = "Unable to determine any information from the assembly. " + loadException.SourceException.GetType().Name + ": " + loadException.SourceException.Message;
                 return;
             }
 
             returnVal.AssemblyType = BinaryType.Managed;
-            AssemblyName fullName = reflectionOnlyLoadFromAssembly.GetName();
+            AssemblyName fullName = loadFromAssembly.GetName();
             returnVal.AssemblyBinaryName = fullName.Name;
             returnVal.AssemblyFullName = fullName.FullName;
             returnVal.AssemblyVersion = fullName.Version;
             PortableExecutableKinds peKind;
             ImageFileMachine machineType;
-            reflectionOnlyLoadFromAssembly.ManifestModule.GetPEKind(out peKind, out machineType);
+            loadFromAssembly.ManifestModule.GetPEKind(out peKind, out machineType);
             if (peKind == PortableExecutableKinds.ILOnly &&
                 machineType == ImageFileMachine.I386)
             {
@@ -229,10 +216,9 @@ namespace Wayfinder.DependencyResolver
                 }
             }
 
-            // List references from metadata only
             try
             {
-                foreach (AssemblyName name in reflectionOnlyLoadFromAssembly.GetReferencedAssemblies().OrderBy((n) => n.Name))
+                foreach (AssemblyName name in loadFromAssembly.GetReferencedAssemblies().OrderBy((n) => n.Name))
                 {
                     if (!string.Equals("mscorlib", name.Name, StringComparison.OrdinalIgnoreCase) &&
                         !string.Equals("System", name.Name, StringComparison.OrdinalIgnoreCase))
