@@ -6,6 +6,8 @@ using OpenTK.Graphics;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
 using OpenTK.Wpf;
+using QuickFont;
+using QuickFont.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -38,9 +40,9 @@ namespace Wayfinder.UI.NetCore
         private Project _project;
         private Guid _selectedComponentId = Guid.Empty;
 
-        //private QFont _font;
-        //private QFontDrawing _drawing;
-        //private QFontRenderOptions _renderOptions;
+        private QFont _font;
+        private QFontDrawing _drawing;
+        private QFontRenderOptions _renderOptions;
 
         private bool _initializedResources = false;
 
@@ -319,34 +321,34 @@ namespace Wayfinder.UI.NetCore
         {
             GL.Hint(HintTarget.LineSmoothHint, HintMode.Fastest);
 
-            //QFontBuilderConfiguration fontBuilderConfig = new QFontBuilderConfiguration(true)
-            //{
-            //    TextGenerationRenderHint = TextGenerationRenderHint.SizeDependent,
-            //    Characters = CharacterSet.General,
-            //    //ShadowConfig = new QFontShadowConfiguration()
-            //    //{
-            //    //    Type = ShadowType.Expanded,
-            //    //    BlurRadius = 4,
-            //    //    BlurPasses = 8,
-            //    //    Scale = 1.4f
-            //    //},
-            //    //KerningConfig = new QFontKerningConfiguration()
-            //    //{
-            //    //    AlphaEmptyPixelTolerance = 20
-            //    //},
-            //};
+            QFontBuilderConfiguration fontBuilderConfig = new QFontBuilderConfiguration(true)
+            {
+                TextGenerationRenderHint = TextGenerationRenderHint.SizeDependent,
+                Characters = CharacterSet.General,
+                //ShadowConfig = new QFontShadowConfiguration()
+                //{
+                //    Type = ShadowType.Expanded,
+                //    BlurRadius = 4,
+                //    BlurPasses = 8,
+                //    Scale = 1.4f
+                //},
+                //KerningConfig = new QFontKerningConfiguration()
+                //{
+                //    AlphaEmptyPixelTolerance = 20
+                //},
+            };
 
-            //_font = new QFont(@".\\Resources\\consola.ttf", 10, fontBuilderConfig);
-            //_drawing = new QFontDrawing();
+            _font = new QFont(@".\\Resources\\consola.ttf", 10, fontBuilderConfig);
+            _drawing = new QFontDrawing();
 
-            //_renderOptions = new QFontRenderOptions()
-            //{
-            //    UseDefaultBlendFunction = true,
-            //    CharacterSpacing = 0.2f,
-            //    Colour = System.Drawing.Color.Black,
-            //    LockToPixel = true,
-            //    //TransformToViewport = new Viewport(0, 0, (float)Canvas.Width, (float)Canvas.Height)
-            //};
+            _renderOptions = new QFontRenderOptions()
+            {
+                UseDefaultBlendFunction = true,
+                CharacterSpacing = 0.2f,
+                Colour = System.Drawing.Color.Black,
+                LockToPixel = true,
+                //TransformToViewport = new Viewport(0, 0, (float)Canvas.Width, (float)Canvas.Height)
+            };
 
             _textureResizeHandle = GLTexture.Load(new FileInfo(".\\Resources\\resize_handle.png"));
             _textureExpandButton = GLTexture.Load(new FileInfo(".\\Resources\\bring_to_front.png"));
@@ -387,8 +389,8 @@ namespace Wayfinder.UI.NetCore
                 GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 
                 // Clear font pixel buffer
-                //_drawing.ProjectionMatrix = Matrix4.CreateOrthographicOffCenter(0, (float)Canvas.ActualWidth, 0, (float)Canvas.ActualHeight, -1, 1);
-                //_drawing.DrawingPrimitives.Clear();
+                _drawing.ProjectionMatrix = Matrix4.CreateOrthographicOffCenter(0, (float)Canvas.ActualWidth, 0, (float)Canvas.ActualHeight, -1, 1);
+                _drawing.DrawingPrimitives.Clear();
 
                 UpdateUiComponentBounds(_uiComponents[_project.RootComponent.UniqueId]);
 
@@ -409,13 +411,13 @@ namespace Wayfinder.UI.NetCore
                 DrawComponentRecursive(_uiComponents[_project.RootComponent.UniqueId]);
 
                 // Draw font pixel buffer over the top of everything
-                //GL.Enable(EnableCap.Texture2D);
-                //GL.Enable(EnableCap.Blend);
-                //_drawing.RefreshBuffers();
-                //_drawing.Draw();
-                //GL.UseProgram(0);
-                //GL.Disable(EnableCap.Texture2D);
-                //GL.Disable(EnableCap.Blend);
+                GL.Enable(EnableCap.Texture2D);
+                GL.Enable(EnableCap.Blend);
+                _drawing.RefreshBuffers();
+                _drawing.Draw();
+                GL.UseProgram(0);
+                GL.Disable(EnableCap.Texture2D);
+                GL.Disable(EnableCap.Blend);
 
                 // Draw people
                 GL.Enable(EnableCap.Texture2D);
@@ -901,10 +903,10 @@ namespace Wayfinder.UI.NetCore
             if (!isTiny && !currentComponent.IsFilteredOut)
             {
                 GL.Enable(EnableCap.Blend);
-                //_drawing.Print(_font,
-                //    currentComponent.BaseComponent.Name,
-                //    new Vector3((float)Math.Round(left * Canvas.ActualHeight) + 3, (float)Math.Round((1 - top) * Canvas.ActualHeight), 0),
-                //    QFontAlignment.Min.X, _renderOptions);
+                _drawing.Print(_font,
+                    currentComponent.BaseComponent.Name,
+                    new Vector3((float)Math.Round(left * Canvas.ActualHeight) + 3, (float)Math.Round((1 - top) * Canvas.ActualHeight), 0),
+                    QFontAlignment.Left, _renderOptions);
                 GL.UseProgram(0);
                 GL.Disable(EnableCap.Blend);
                 GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);

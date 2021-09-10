@@ -3,15 +3,17 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29102.190
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Wayfinder.UI", "Wayfinder.UI\Wayfinder.UI.csproj", "{86115ADD-099A-4D64-B325-1D9C3AAA180D}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Wayfinder.DependencyResolver", "Wayfinder.DependencyResolver\Wayfinder.DependencyResolver.csproj", "{3B3F335B-11EB-48CE-83A9-E245DD455DBC}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Wayfinder.Console", "Wayfinder.Console\Wayfinder.Console.csproj", "{6DE83EBE-497B-4909-B43B-B01133D0B204}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Wayfinder.Tests", "Wayfinder.Tests\Wayfinder.Tests.csproj", "{37023D9A-E8EE-4B7E-BBF8-6FB7ECEDACD7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Wayfinder.UI.NetCore", "Wayfinder.UI.NetCore\Wayfinder.UI.NetCore.csproj", "{53FDFAF4-A81A-4D5B-924E-819511595706}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Wayfinder.UI.NetCore", "Wayfinder.UI.NetCore\Wayfinder.UI.NetCore.csproj", "{53FDFAF4-A81A-4D5B-924E-819511595706}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Wayfinder.QuickFont", "Wayfinder.QuickFont\Wayfinder.QuickFont.csproj", "{DF37F7E0-2DB7-46D7-9F31-F067CCA79C41}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Wayfinder.SharpFont", "Wayfinder.SharpFont\Wayfinder.SharpFont.csproj", "{895E377B-E721-4503-A401-F5147DF9583E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,14 +23,6 @@ Global
 		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{86115ADD-099A-4D64-B325-1D9C3AAA180D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{86115ADD-099A-4D64-B325-1D9C3AAA180D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{86115ADD-099A-4D64-B325-1D9C3AAA180D}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{86115ADD-099A-4D64-B325-1D9C3AAA180D}.Debug|x64.Build.0 = Debug|Any CPU
-		{86115ADD-099A-4D64-B325-1D9C3AAA180D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{86115ADD-099A-4D64-B325-1D9C3AAA180D}.Release|Any CPU.Build.0 = Release|Any CPU
-		{86115ADD-099A-4D64-B325-1D9C3AAA180D}.Release|x64.ActiveCfg = Release|Any CPU
-		{86115ADD-099A-4D64-B325-1D9C3AAA180D}.Release|x64.Build.0 = Release|Any CPU
 		{3B3F335B-11EB-48CE-83A9-E245DD455DBC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{3B3F335B-11EB-48CE-83A9-E245DD455DBC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3B3F335B-11EB-48CE-83A9-E245DD455DBC}.Debug|x64.ActiveCfg = Debug|Any CPU
@@ -61,6 +55,22 @@ Global
 		{53FDFAF4-A81A-4D5B-924E-819511595706}.Release|Any CPU.Build.0 = Release|Any CPU
 		{53FDFAF4-A81A-4D5B-924E-819511595706}.Release|x64.ActiveCfg = Release|Any CPU
 		{53FDFAF4-A81A-4D5B-924E-819511595706}.Release|x64.Build.0 = Release|Any CPU
+		{DF37F7E0-2DB7-46D7-9F31-F067CCA79C41}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DF37F7E0-2DB7-46D7-9F31-F067CCA79C41}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DF37F7E0-2DB7-46D7-9F31-F067CCA79C41}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{DF37F7E0-2DB7-46D7-9F31-F067CCA79C41}.Debug|x64.Build.0 = Debug|Any CPU
+		{DF37F7E0-2DB7-46D7-9F31-F067CCA79C41}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DF37F7E0-2DB7-46D7-9F31-F067CCA79C41}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DF37F7E0-2DB7-46D7-9F31-F067CCA79C41}.Release|x64.ActiveCfg = Release|Any CPU
+		{DF37F7E0-2DB7-46D7-9F31-F067CCA79C41}.Release|x64.Build.0 = Release|Any CPU
+		{895E377B-E721-4503-A401-F5147DF9583E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{895E377B-E721-4503-A401-F5147DF9583E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{895E377B-E721-4503-A401-F5147DF9583E}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{895E377B-E721-4503-A401-F5147DF9583E}.Debug|x64.Build.0 = Debug|Any CPU
+		{895E377B-E721-4503-A401-F5147DF9583E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{895E377B-E721-4503-A401-F5147DF9583E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{895E377B-E721-4503-A401-F5147DF9583E}.Release|x64.ActiveCfg = Release|Any CPU
+		{895E377B-E721-4503-A401-F5147DF9583E}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

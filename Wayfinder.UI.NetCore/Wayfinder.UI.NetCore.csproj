@@ -5,6 +5,7 @@
     <TargetFramework>net5.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
     <RootNamespace>Wayfinder.UI</RootNamespace>
+    <AssemblyName>Wayfinder.UI</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>
@@ -51,6 +52,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Wayfinder.DependencyResolver\Wayfinder.DependencyResolver.csproj" />
+    <ProjectReference Include="..\Wayfinder.QuickFont\Wayfinder.QuickFont.csproj" />
   </ItemGroup>
 
   <ItemGroup>
