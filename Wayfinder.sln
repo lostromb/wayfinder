@@ -9,7 +9,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Wayfinder.Console", "Wayfin
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Wayfinder.Tests", "Wayfinder.Tests\Wayfinder.Tests.csproj", "{37023D9A-E8EE-4B7E-BBF8-6FB7ECEDACD7}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Wayfinder.UI.NetCore", "Wayfinder.UI.NetCore\Wayfinder.UI.NetCore.csproj", "{53FDFAF4-A81A-4D5B-924E-819511595706}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Wayfinder.UI", "Wayfinder.UI\Wayfinder.UI.csproj", "{53FDFAF4-A81A-4D5B-924E-819511595706}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Wayfinder.QuickFont", "Wayfinder.QuickFont\Wayfinder.QuickFont.csproj", "{DF37F7E0-2DB7-46D7-9F31-F067CCA79C41}"
 EndProject
