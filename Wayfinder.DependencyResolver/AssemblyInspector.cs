@@ -458,7 +458,7 @@ namespace Wayfinder.DependencyResolver
                 return null;
             }
 
-            _logger.Log("Initializing load context guest...");
+            _logger.Log("Initializing load context guest for " + assemblyFile.FullName, LogLevel.Vrb);
             // Make sure we set the AssemblyLoadContext.CurrentContextualReflectionContext at initialization
             using (var scope = loadContext.EnterContextualReflection())
             {
