@@ -66,6 +66,11 @@ namespace Wayfinder.UI.NetCore
 
         private readonly Counter<GuidPair> _cachedLinePairs = new Counter<GuidPair>();
 
+        // handle to framebuffer for indirect rendering
+        private int _hBackBuffer = 0;
+        private int _hBackBufferColorTex = 0;
+        private int _hBackBufferDepthTex = 0;
+        private Vector2i _backBufferSize = new Vector2i(0, 0);
 
         public MainWindow()
         {
@@ -77,8 +82,10 @@ namespace Wayfinder.UI.NetCore
             InitializeComponent();
             _packageCache = new NugetPackageCache();
 
+            // TODO: Instead of rendering directly to Canvas provided framebuffer, it looks like I need to indirectly maintain my own framebuffer object so I can control its format.
+            // I assume this will fix the alpha blending problem also.
             var settings = new GLWpfControlSettings();
-            settings.MajorVersion = 2;
+            settings.MajorVersion = 3;
             settings.MinorVersion = 0;
             Canvas.Start(settings);
             UpdateUiElements();
@@ -365,8 +372,8 @@ namespace Wayfinder.UI.NetCore
                 InitializeGlResources();
             }
 
-            if (Canvas.ActualHeight <= 0 ||
-                Canvas.ActualWidth <= 0)
+            if (Canvas.ActualHeight <= 1 ||
+                Canvas.ActualWidth <= 1)
             {
                 // Nothing to render
                 return;
@@ -375,59 +382,38 @@ namespace Wayfinder.UI.NetCore
             Monitor.Enter(_mutex);
             try
             {
-                GL.ClearColor(0.9f, 0.9f, 0.9f, 1.0f);
+                RegenerateBackBufferIfNeeded();
+
+                // Render everything to an indirect texture
+                RenderBackBuffer();
+
+                // Bind to canvas framebuffer and clear
+                GL.BindFramebuffer(FramebufferTarget.Framebuffer, Canvas.Framebuffer);
+                GL.ClearColor(1.0f, 0.0f, 0.0f, 1.0f);
                 GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
                 GL.MatrixMode(MatrixMode.Projection);
                 GL.LoadIdentity();
                 double aspectRatio = Canvas.ActualWidth / Canvas.ActualHeight;
-                GL.Ortho(0, aspectRatio, 1, 0, -1, 1);
+                GL.Ortho(0, 1, 1, 0, -1, 1);
                 GL.MatrixMode(MatrixMode.Modelview);
                 GL.LoadIdentity();
-                GL.Disable(EnableCap.DepthTest);
-                GL.ShadeModel(ShadingModel.Smooth);
-                GL.Hint(HintTarget.LineSmoothHint, HintMode.Nicest);
-                GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 
-                // Clear font pixel buffer
-                _drawing.ProjectionMatrix = Matrix4.CreateOrthographicOffCenter(0, (float)Canvas.ActualWidth, 0, (float)Canvas.ActualHeight, -1, 1);
-                _drawing.DrawingPrimitives.Clear();
-
-                UpdateUiComponentBounds(_uiComponents[_project.RootComponent.UniqueId]);
-
-                // Draw all connecting lines
-                foreach (var pair in _cachedLinePairs)
+                // And copy the back buffer onto the canvas
+                GL.Enable(EnableCap.Texture2D);
+                GL.Disable(EnableCap.Blend);
+                GL.UseProgram(0);
+                GL.BindTexture(TextureTarget.Texture2D, _hBackBufferColorTex);
+                GL.Begin(PrimitiveType.Quads);
                 {
-                    UIComponent originComponent = _uiComponents[pair.Key.A];
-                    UIComponent destinationComponent = _uiComponents[pair.Key.B];
-
-                    DrawConnectingLine(
-                        originComponent,
-                        destinationComponent,
-                        pair.Value,
-                        pair.Key.A == _selectedComponentId || pair.Key.B == _selectedComponentId);
+                    GL.Color4(1.0f, 1.0f, 1.0f, 1.0f);
+                    GL.TexCoord2(0, 1); GL.Vertex2(0, 0);
+                    GL.TexCoord2(1, 1); GL.Vertex2(1.0, 0);
+                    GL.TexCoord2(1, 0); GL.Vertex2(1.0, 1.0);
+                    GL.TexCoord2(0, 0); GL.Vertex2(0, 1.0);
                 }
-
-                // Recurse through all containers and draw them
-                DrawComponentRecursive(_uiComponents[_project.RootComponent.UniqueId]);
-
-                // Draw font pixel buffer over the top of everything
-                GL.Enable(EnableCap.Texture2D);
-                GL.Enable(EnableCap.Blend);
-                _drawing.RefreshBuffers();
-                _drawing.Draw();
-                GL.UseProgram(0);
-                GL.Disable(EnableCap.Texture2D);
-                GL.Disable(EnableCap.Blend);
-
-                // Draw people
-                GL.Enable(EnableCap.Texture2D);
-                GL.Enable(EnableCap.Blend);
-                GL.UseProgram(0);
-                GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
-
+                GL.End();
                 GL.BindTexture(TextureTarget.Texture2D, 0);
-                GL.Disable(EnableCap.Texture2D);
-                GL.Disable(EnableCap.Blend);
+
 
                 // Draw debugging data
                 //GL.Enable(EnableCap.Texture2D);
@@ -454,6 +440,145 @@ namespace Wayfinder.UI.NetCore
             finally
             {
                 Monitor.Exit(_mutex);
+            }
+        }
+
+        private void RenderBackBuffer()
+        {
+            // Bind and clear back buffer
+            GL.BindFramebuffer(FramebufferTarget.Framebuffer, _hBackBuffer);
+            GL.ClearColor(0.9f, 0.9f, 0.9f, 1.0f);
+            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+            GL.MatrixMode(MatrixMode.Projection);
+            GL.LoadIdentity();
+            double aspectRatio = Canvas.ActualWidth / Canvas.ActualHeight;
+            GL.Ortho(0, aspectRatio, 1, 0, -1, 1);
+            GL.MatrixMode(MatrixMode.Modelview);
+            GL.LoadIdentity();
+            GL.Disable(EnableCap.DepthTest);
+            GL.ShadeModel(ShadingModel.Smooth);
+            GL.Hint(HintTarget.LineSmoothHint, HintMode.Nicest);
+            GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+
+            // Clear font pixel buffer
+            _drawing.ProjectionMatrix = Matrix4.CreateOrthographicOffCenter(0, (float)Canvas.ActualWidth, 0, (float)Canvas.ActualHeight, -1, 1);
+            _drawing.DrawingPrimitives.Clear();
+
+            UpdateUiComponentBounds(_uiComponents[_project.RootComponent.UniqueId]);
+
+            // Draw all connecting lines
+            foreach (var pair in _cachedLinePairs)
+            {
+                UIComponent originComponent = _uiComponents[pair.Key.A];
+                UIComponent destinationComponent = _uiComponents[pair.Key.B];
+
+                DrawConnectingLine(
+                    originComponent,
+                    destinationComponent,
+                    pair.Value,
+                    pair.Key.A == _selectedComponentId || pair.Key.B == _selectedComponentId);
+            }
+
+            // Recurse through all containers and draw them
+            GL.Enable(EnableCap.Blend);
+            GL.Disable(EnableCap.Texture2D);
+            GL.UseProgram(0);
+            GL.BindTexture(TextureTarget.Texture2D, 0);
+            DrawComponentRecursive(_uiComponents[_project.RootComponent.UniqueId]);
+
+            // Draw font pixel buffer over the top of everything
+            GL.Enable(EnableCap.Texture2D);
+            GL.Enable(EnableCap.Blend);
+            _drawing.RefreshBuffers();
+            _drawing.Draw();
+            GL.UseProgram(0);
+            GL.Disable(EnableCap.Texture2D);
+            GL.Disable(EnableCap.Blend);
+
+            // Draw people
+            GL.Enable(EnableCap.Texture2D);
+            GL.Enable(EnableCap.Blend);
+            GL.UseProgram(0);
+            GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+
+            GL.BindTexture(TextureTarget.Texture2D, 0);
+            GL.Disable(EnableCap.Texture2D);
+            GL.Disable(EnableCap.Blend);
+
+            // Draw debugging data
+            //GL.Enable(EnableCap.Texture2D);
+            //GL.Enable(EnableCap.Blend);
+            //GL.UseProgram(0);
+            //GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+            //GL.BindTexture(TextureTarget.Texture2D, _textureTest.Handle);
+            //GL.Begin(PrimitiveType.Quads);
+            //{
+            //    GL.Color4(1.0f, 1.0f, 1.0f, 1.0f);
+            //    GL.TexCoord2(0, 0); GL.Vertex2(0, 0);
+            //    GL.TexCoord2(1, 0); GL.Vertex2(0.5, 0);
+            //    GL.TexCoord2(1, 1); GL.Vertex2(0.5, 0.5);
+            //    GL.TexCoord2(0, 1); GL.Vertex2(0, 0.5);
+            //}
+            //GL.End();
+            //GL.BindTexture(TextureTarget.Texture2D, 0);
+
+            //GL.Disable(EnableCap.Texture2D);
+            //GL.Disable(EnableCap.Blend);
+        }
+
+        private void RegenerateBackBufferIfNeeded()
+        {
+            int canvasWidth = (int)Canvas.ActualWidth;
+            int canvasHeight = (int)Canvas.ActualHeight;
+            if (canvasWidth != _backBufferSize.X ||
+                canvasHeight != _backBufferSize.Y)
+            {
+                // Invalidate current buffer
+                if (_hBackBuffer != 0)
+                {
+                    GL.DeleteFramebuffer(_hBackBuffer);
+                    GL.DeleteTexture(_hBackBufferColorTex);
+                    GL.DeleteTexture(_hBackBufferDepthTex);
+                }
+
+                // Create color texture
+                GL.GenTextures(1, out _hBackBufferColorTex);
+                GL.BindTexture(TextureTarget.Texture2D, _hBackBufferColorTex);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
+                // IntPtr.Zero means reserve texture memory, but texels are undefined
+                GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba8, canvasWidth, canvasHeight, 0, OpenTK.Graphics.OpenGL.PixelFormat.Rgba, PixelType.Byte, IntPtr.Zero);
+
+                // Create depth texture
+                GL.GenTextures(1, out _hBackBufferDepthTex);
+                GL.BindTexture(TextureTarget.Texture2D, _hBackBufferDepthTex);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMinFilter.Linear);
+                //GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.DepthTextureMode, (int)All.Intensity);
+                //gl.glTexParameteri(TextureTarget.Texture2D, GL2.GL_TEXTURE_COMPARE_MODE, GL2.GL_COMPARE_R_TO_TEXTURE);
+                //gl.glTexParameteri(TextureTarget.Texture2D, GL2.GL_TEXTURE_COMPARE_FUNC, GL2.GL_LEQUAL);
+                GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.DepthComponent24, canvasWidth, canvasHeight, 0, OpenTK.Graphics.OpenGL.PixelFormat.DepthComponent, PixelType.UnsignedByte, IntPtr.Zero);
+
+                GL.GenFramebuffers(1, out _hBackBuffer);
+                GL.BindFramebuffer(FramebufferTarget.Framebuffer, _hBackBuffer);
+                //Attach 2D texture to this FBO
+                GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.ColorAttachment0, TextureTarget.Texture2D, _hBackBufferColorTex, 0);
+                GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.DepthAttachment, TextureTarget.Texture2D, _hBackBufferDepthTex, 0);
+
+                //Does the GPU support current FBO configuration?
+                FramebufferErrorCode status = GL.CheckFramebufferStatus(FramebufferTarget.Framebuffer);
+                if (status != FramebufferErrorCode.FramebufferComplete)
+                {
+                    Console.WriteLine("Framebuffer bind error! " + status.ToString());
+                }
+
+                GL.BindFramebuffer(FramebufferTarget.Framebuffer, Canvas.Framebuffer);
+
+                _backBufferSize = new Vector2i(canvasWidth, canvasHeight);
             }
         }
 
