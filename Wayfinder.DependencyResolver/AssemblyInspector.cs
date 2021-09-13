@@ -462,7 +462,7 @@ namespace Wayfinder.DependencyResolver
             // Make sure we set the AssemblyLoadContext.CurrentContextualReflectionContext at initialization
             using (var scope = loadContext.EnterContextualReflection())
             {
-                object? uncastReturnVal = initializeMethodSig.Invoke(containerGuest, new object[] { assemblyFile.FullName });
+                object uncastReturnVal = initializeMethodSig.Invoke(containerGuest, new object[] { assemblyFile.FullName });
                 byte[] serializedAssemblyData = uncastReturnVal as byte[];
                 if (serializedAssemblyData == null)
                 {
