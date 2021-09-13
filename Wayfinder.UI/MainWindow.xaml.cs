@@ -408,7 +408,17 @@ namespace Wayfinder.UI.NetCore
                 }
 
                 // Recurse through all containers and draw them
-                DrawComponentRecursive(_uiComponents[_project.RootComponent.UniqueId]);
+                ComponentColorBy colorBy;
+                if (RadioButton_ColorByLibraryType.IsChecked.GetValueOrDefault(true))
+                {
+                    colorBy = ComponentColorBy.LibraryType;
+                }
+                else
+                {
+                    colorBy = ComponentColorBy.FrameworkVersion;
+                }
+
+                DrawComponentRecursive(_uiComponents[_project.RootComponent.UniqueId], colorBy);
 
                 // Draw font pixel buffer over the top of everything
                 GL.Enable(EnableCap.Texture2D);
@@ -712,7 +722,140 @@ namespace Wayfinder.UI.NetCore
             }
         }
 
-        private void DrawComponentRecursive(UIComponent currentComponent)
+        private static void ColorComponentByLibraryType(UIComponent currentComponent, float alpha, out Color4 componentBottomColor, out Color4 componentTopColor)
+        {
+            // determine color based on assembly type
+            switch (currentComponent.BaseComponent.ComponentType)
+            {
+                case AssemblyComponentType.Managed_Local:
+                    if (!currentComponent.BaseComponent.HasDependents)
+                    {
+                        // Root node - really dark green
+                        componentTopColor = new Color4(96 / 255f, 213 / 255f, 68 / 255f, alpha);
+                        componentBottomColor = new Color4(139 / 255f, 237 / 255f, 131 / 255f, alpha);
+                    }
+                    else
+                    {
+                        // green
+                        componentTopColor = new Color4(178 / 255f, 245 / 255f, 182 / 255f, alpha);
+                        componentBottomColor = new Color4(205 / 255f, 236 / 255f, 207 / 255f, alpha);
+                    }
+                    break;
+                case AssemblyComponentType.Managed_Builtin:
+                    // green and transparent
+                    componentTopColor = new Color4(178 / 255f, 245 / 255f, 182 / 255f, alpha * 0.5f);
+                    componentBottomColor = new Color4(205 / 255f, 236 / 255f, 207 / 255f, alpha * 0.5f);
+                    break;
+                case AssemblyComponentType.Native_Local:
+                    if (!currentComponent.BaseComponent.HasDependents)
+                    {
+                        // Root node - really dark blue
+                        componentTopColor = new Color4(104 / 255f, 121 / 255f, 226 / 255f, alpha);
+                        componentBottomColor = new Color4(153 / 255f, 156 / 255f, 246 / 255f, alpha);
+                    }
+                    else
+                    {
+                        // blue
+                        componentTopColor = new Color4(178 / 255f, 181 / 255f, 235 / 255f, alpha);
+                        componentBottomColor = new Color4(207 / 255f, 205 / 255f, 236 / 255f, alpha);
+                    }
+                    break;
+                case AssemblyComponentType.Native_Builtin:
+                    // blue and transparent
+                    componentTopColor = new Color4(178 / 255f, 181 / 255f, 235 / 255f, alpha * 0.5f);
+                    componentBottomColor = new Color4(207 / 255f, 205 / 255f, 236 / 255f, alpha * 0.5f);
+                    break;
+                default:
+                    // light red
+                    componentTopColor = new Color4(233 / 255f, 213 / 255f, 205 / 255f, alpha);
+                    componentBottomColor = new Color4(238 / 255f, 226 / 255f, 221 / 255f, alpha);
+                    break;
+            }
+        }
+
+        private static void ColorComponentByFrameworkVersion(UIComponent currentComponent, float alpha, out Color4 componentBottomColor, out Color4 componentTopColor)
+        {
+            string framework = currentComponent?.BaseComponent?.AssemblyInfo?.AssemblyFramework;
+            if (string.IsNullOrEmpty(framework))
+            {
+                componentTopColor = new Color4(230f / 255f, 230f / 255f, 230f / 255f, alpha);
+                componentBottomColor = new Color4(230f / 255f, 230f / 255f, 230f / 255f, alpha);
+            }
+            else if (framework.Contains(".NETFramework"))
+            {
+                // blue
+                componentTopColor = new Color4(178 / 255f, 181 / 255f, 235 / 255f, alpha);
+                componentBottomColor = new Color4(207 / 255f, 205 / 255f, 236 / 255f, alpha);
+                //if (framework.Contains("Version=v4.8"))
+                //{
+
+                //}
+                //else if (framework.Contains("Version=v4.7.2"))
+                //{
+
+                //}
+                //else if (framework.Contains("Version=v4.7.1"))
+                //{
+
+                //}
+                //else if (framework.Contains("Version=v4.7"))
+                //{
+
+                //}
+                //else if (framework.Contains("Version=v4.6.2"))
+                //{
+
+                //}
+                //else if (framework.Contains("Version=v4.6.1"))
+                //{
+
+                //}
+                //else if (framework.Contains("Version=v4.6"))
+                //{
+
+                //}
+                //else if (framework.Contains("Version=v4.5.2"))
+                //{
+
+                //}
+                //else if (framework.Contains("Version=v4.5.1"))
+                //{
+
+                //}
+                //else if (framework.Contains("Version=v4.5"))
+                //{
+
+                //}
+                //else
+                //{
+
+                //}
+            }
+            else if (framework.Contains(".NETStandard"))
+            {
+                // green
+                componentTopColor = new Color4(178 / 255f, 245 / 255f, 182 / 255f, alpha);
+                componentBottomColor = new Color4(205 / 255f, 236 / 255f, 207 / 255f, alpha);
+                //else if (framework.Contains("Version=v2.0"))
+                //{
+
+                //}
+            }
+            else if (framework.Contains(".NETCoreApp"))
+            {
+                // light red
+                componentTopColor = new Color4(233 / 255f, 213 / 255f, 205 / 255f, alpha);
+                componentBottomColor = new Color4(238 / 255f, 226 / 255f, 221 / 255f, alpha);
+            }
+            else
+            {
+                // Grey I guess
+                componentTopColor = new Color4(230f / 255f, 230f / 255f, 230f / 255f, alpha);
+                componentBottomColor = new Color4(230f / 255f, 230f / 255f, 230f / 255f, alpha);
+            }
+        }
+
+        private void DrawComponentRecursive(UIComponent currentComponent, ComponentColorBy colorBy)
         {
             double left = currentComponent.AbsoluteBounds.Min.X;
             double right = currentComponent.AbsoluteBounds.Max.X;
@@ -773,52 +916,13 @@ namespace Wayfinder.UI.NetCore
                         }
                         else
                         {
-                            // determine color based on assembly type
-                            switch (currentComponent.BaseComponent.ComponentType)
+                            if (colorBy == ComponentColorBy.LibraryType)
                             {
-                                case AssemblyComponentType.Managed_Local:
-                                    if (!currentComponent.BaseComponent.HasDependents)
-                                    {
-                                        // Root node - really dark green
-                                        componentTopColor = new Color4(96 / 255f, 213 / 255f, 68 / 255f, alpha);
-                                        componentBottomColor = new Color4(139 / 255f, 237 / 255f, 131 / 255f, alpha);
-                                    }
-                                    else
-                                    {
-                                        // green
-                                        componentTopColor = new Color4(178 / 255f, 245 / 255f, 182 / 255f, alpha);
-                                        componentBottomColor = new Color4(205 / 255f, 236 / 255f, 207 / 255f, alpha);
-                                    }
-                                    break;
-                                case AssemblyComponentType.Managed_Builtin:
-                                    // green and transparent
-                                    componentTopColor = new Color4(178 / 255f, 245 / 255f, 182 / 255f, alpha * 0.5f);
-                                    componentBottomColor = new Color4(205 / 255f, 236 / 255f, 207 / 255f, alpha * 0.5f);
-                                    break;
-                                case AssemblyComponentType.Native_Local:
-                                    if (!currentComponent.BaseComponent.HasDependents)
-                                    {
-                                        // Root node - really dark blue
-                                        componentTopColor = new Color4(104 / 255f, 121 / 255f, 226 / 255f, alpha);
-                                        componentBottomColor = new Color4(153 / 255f, 156 / 255f, 246 / 255f, alpha);
-                                    }
-                                    else
-                                    {
-                                        // blue
-                                        componentTopColor = new Color4(178 / 255f, 181 / 255f, 235 / 255f, alpha);
-                                        componentBottomColor = new Color4(207 / 255f, 205 / 255f, 236 / 255f, alpha);
-                                    }
-                                    break;
-                                case AssemblyComponentType.Native_Builtin:
-                                    // blue and transparent
-                                    componentTopColor = new Color4(178 / 255f, 181 / 255f, 235 / 255f, alpha * 0.5f);
-                                    componentBottomColor = new Color4(207 / 255f, 205 / 255f, 236 / 255f, alpha * 0.5f);
-                                    break;
-                                default:
-                                    // light red
-                                    componentTopColor = new Color4(233 / 255f, 213 / 255f, 205 / 255f, alpha);
-                                    componentBottomColor = new Color4(238 / 255f, 226 / 255f, 221 / 255f, alpha);
-                                    break;
+                                ColorComponentByLibraryType(currentComponent, alpha, out componentBottomColor, out componentTopColor);
+                            }
+                            else
+                            {
+                                ColorComponentByFrameworkVersion(currentComponent, alpha, out componentBottomColor, out componentTopColor);
                             }
                         }
                     }
@@ -917,7 +1021,7 @@ namespace Wayfinder.UI.NetCore
             {
                 foreach (Guid childId in currentComponent.BaseComponent.Children)
                 {
-                    DrawComponentRecursive(_uiComponents[childId]);
+                    DrawComponentRecursive(_uiComponents[childId], colorBy);
                 }
             }
         }

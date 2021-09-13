@@ -78,6 +78,9 @@ namespace Wayfinder.Tests
                 s.ReferenceType == AssemblyReferenceType.Managed &&
                 s.ReferencedAssemblyVersion == new Version("4.0.0.0") &&
                 string.Equals(s.AssemblyBinaryName, "WindowsBase", StringComparison.OrdinalIgnoreCase)));
+            Assert.IsNotNull(parsedData.StructuredFrameworkVersion);
+            Assert.AreEqual(DotNetFrameworkType.NetFramework, parsedData.StructuredFrameworkVersion.FrameworkType);
+            Assert.AreEqual(new Version(4, 5), parsedData.StructuredFrameworkVersion.FrameworkVersion);
         }
 
         [TestMethod]

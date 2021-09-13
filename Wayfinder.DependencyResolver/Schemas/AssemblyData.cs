@@ -37,6 +37,11 @@ namespace Wayfinder.DependencyResolver.Schemas
         public string AssemblyFramework { get; set; }
 
         /// <summary>
+        /// The structured, parsed version of the target framework of this assembly.
+        /// </summary>
+        public DotNetFrameworkVersion StructuredFrameworkVersion { get; set; }
+
+        /// <summary>
         /// The platform that this assembly was compiled for
         /// </summary>
         public BinaryPlatform Platform { get; set; }
@@ -70,6 +75,7 @@ namespace Wayfinder.DependencyResolver.Schemas
         {
             ReferencedAssemblies = new List<AssemblyReferenceName>();
             NugetSourcePackages = new List<NugetPackageIdentity>();
+            StructuredFrameworkVersion = new DotNetFrameworkVersion(DotNetFrameworkType.Unknown, new Version(0, 0));
         }
 
         public AssemblyReferenceName AsReference(BinaryType sourceBinaryType)
@@ -98,6 +104,7 @@ namespace Wayfinder.DependencyResolver.Schemas
             writer.Write(AssemblyFullName ?? "");
             writer.Write(AssemblyVersion == null ? "" : AssemblyVersion.ToString());
             writer.Write(AssemblyFramework ?? "");
+            StructuredFrameworkVersion.Serialize(writer);
             writer.Write((int)Platform);
             writer.Write((int)AssemblyType);
             writer.Write(AssemblyHashMD5 ?? "");
@@ -135,6 +142,7 @@ namespace Wayfinder.DependencyResolver.Schemas
             }
 
             returnVal.AssemblyFramework = reader.ReadString();
+            returnVal.StructuredFrameworkVersion = DotNetFrameworkVersion.Deserialize(reader);
             returnVal.Platform = (BinaryPlatform)reader.ReadInt32();
             returnVal.AssemblyType = (BinaryType)reader.ReadInt32();
             returnVal.AssemblyHashMD5 = reader.ReadString();

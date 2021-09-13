@@ -18,6 +18,13 @@
                 <Label Content="Filter" />
                 <TextBox Name="FilterTextBox" Text="" Width="400" KeyUp="FilterTextBox_KeyUp"/>
             </StackPanel>
+            <StackPanel Orientation="Vertical" VerticalAlignment="Center" >
+                <Label Content="Color By" />
+            </StackPanel>
+            <StackPanel Orientation="Vertical" VerticalAlignment="Center" >
+                <RadioButton Content="Library Type" Name="RadioButton_ColorByLibraryType" GroupName="ColorBy" IsChecked="true"></RadioButton>
+                <RadioButton Content="Framework Version" Name="RadioButton_ColorByFrameworkVersion" GroupName="ColorBy" ></RadioButton>
+            </StackPanel>
         </StackPanel>
         <StackPanel Name="Sidebar"
               DockPanel.Dock="Right"
