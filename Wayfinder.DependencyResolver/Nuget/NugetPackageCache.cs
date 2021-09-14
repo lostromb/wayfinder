@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Wayfinder.DependencyResolver.Schemas;
 
@@ -14,21 +16,39 @@ namespace Wayfinder.DependencyResolver.Nuget
         /// <summary>
         /// Maps from nuget package identity -> the list of assembly names found within that package, _minus file extensions_ (e.g. "System.Numerics")
         /// </summary>
-        private readonly IDictionary<NugetPackageIdentity, ISet<FileInfo>> _packageFileIndex;
+        private readonly FastConcurrentDictionary<NugetPackageIdentity, ISet<FileInfo>> _packageFileIndex;
+        private readonly FastConcurrentDictionary<FileInfo, string> _md5Cache;
+        private readonly IList<DirectoryInfo> _nugetDirectories;
+        private readonly FileInfo _tempCacheFile;
+        private readonly object _cacheFileLock = new object();
 
-        private readonly IDictionary<FileInfo, string> _md5Cache;
-
-        public NugetPackageCache() : this(new DirectoryInfo[] { new DirectoryInfo(Environment.GetEnvironmentVariable("UserProfile") + "\\.nuget\\packages") })
+        public NugetPackageCache(bool allowPersistentCache) : this(new DirectoryInfo[] { new DirectoryInfo(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + "\\.nuget\\packages") }, allowPersistentCache)
         {
         }
 
-        public NugetPackageCache(IEnumerable<DirectoryInfo> nugetDirectories)
+        public NugetPackageCache(IEnumerable<DirectoryInfo> nugetDirectories, bool allowPersistentCache)
         {
-            _packageFileIndex = new Dictionary<NugetPackageIdentity, ISet<FileInfo>>();
-            _md5Cache = new Dictionary<FileInfo, string>();
+            _packageFileIndex = new FastConcurrentDictionary<NugetPackageIdentity, ISet<FileInfo>>();
+            _md5Cache = new FastConcurrentDictionary<FileInfo, string>();
+            _nugetDirectories = new List<DirectoryInfo>(nugetDirectories);
+            if (allowPersistentCache)
+            {
+                _tempCacheFile = new FileInfo(Path.Combine(Path.GetTempPath(), "wayfinder_md5_cache.bin"));
+            }
+            else
+            {
+                _tempCacheFile = null;
+            }
+        }
 
+        public void Initialize()
+        {
             // Index all the package directories
-            foreach (DirectoryInfo packageRootFolder in nugetDirectories)
+
+            // Load a persistent cache from temp directory if available
+            ReadTempCache();
+
+            foreach (DirectoryInfo packageRootFolder in _nugetDirectories)
             {
                 if (!packageRootFolder.Exists)
                 {
@@ -53,15 +73,58 @@ namespace Wayfinder.DependencyResolver.Nuget
                                         PackageVersion = packageVersionFolder.Name,
                                     };
 
-                                    if (!_packageFileIndex.ContainsKey(thisPackage))
-                                    {
-                                        _packageFileIndex[thisPackage] = new HashSet<FileInfo>();
-                                    }
+                                    ISet<FileInfo> fileSet;
+                                    _packageFileIndex.TryGetValueOrSet(thisPackage, out fileSet, () => new HashSet<FileInfo>());
 
-                                    _packageFileIndex[thisPackage].Add(packageContentFile);
+                                    if (!fileSet.Contains(packageContentFile))
+                                    {
+                                        _packageFileIndex[thisPackage].Add(packageContentFile);
+                                    }
                                 }
                             }
                         }
+                    }
+                }
+            }
+        }
+
+        public void CommitCache()
+        {
+            WriteTempCache();
+        }
+
+        private void ReadTempCache()
+        {
+            if (_tempCacheFile != null && File.Exists(_tempCacheFile.FullName))
+            {
+                lock (_cacheFileLock)
+                using (Stream fileReadStream = new FileStream(_tempCacheFile.FullName, FileMode.Open, FileAccess.Read))
+                using (BinaryReader reader = new BinaryReader(fileReadStream, Encoding.UTF8))
+                {
+                    int numEntries = reader.ReadInt32();
+                    for (int c = 0; c < numEntries; c++)
+                    {
+                        string fileName = reader.ReadString();
+                        string md5 = reader.ReadString();
+                        _md5Cache[new FileInfo(fileName)] = md5;
+                    }
+                }
+            }
+        }
+
+        private void WriteTempCache()
+        {
+            if (_tempCacheFile != null)
+            {
+                lock (_cacheFileLock)
+                using (Stream fileWriteStream = new FileStream(_tempCacheFile.FullName, FileMode.Create, FileAccess.Write))
+                using (BinaryWriter writer = new BinaryWriter(fileWriteStream, Encoding.UTF8))
+                {
+                    writer.Write(_md5Cache.Count);
+                    foreach (var kvp in _md5Cache)
+                    {
+                        writer.Write(kvp.Key.FullName);
+                        writer.Write(kvp.Value);
                     }
                 }
             }
@@ -143,7 +206,7 @@ namespace Wayfinder.DependencyResolver.Nuget
                 }
 
                 returnVal = builder.ToString().ToLowerInvariant();
-                _md5Cache.Add(fileName, returnVal);
+                _md5Cache.TryAdd(fileName, returnVal);
             }
 
             return returnVal;

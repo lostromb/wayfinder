@@ -13,6 +13,8 @@ namespace Wayfinder.Console
         {
             using (AssemblyInspector inspector = new AssemblyInspector(new ConsoleLogger()))
             {
+                AssemblyData d = inspector.InspectSingleAssembly(new FileInfo(@"C:\Code\Durandal\target\netcoreapp3.1\Durandal.dll"), null);
+
                 //DirectoryInfo inputDir = new DirectoryInfo(@"C:\Code\CortanaCore\runtime\services\CortexService\service\src\bin\x64\Debug\net471");
                 //DirectoryInfo inputDir = new DirectoryInfo(@"C:\Code\Durandal\target");
                 DirectoryInfo inputDir = new DirectoryInfo(@"C:\Code\Durandal\target\netcoreapp3.1\");

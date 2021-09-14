@@ -75,7 +75,7 @@ namespace Wayfinder.UI.NetCore
 
             InitializeProject();
             InitializeComponent();
-            _packageCache = new NugetPackageCache();
+            _packageCache = new NugetPackageCache(true);
 
             var settings = new GLWpfControlSettings();
             settings.MajorVersion = 2;
@@ -900,11 +900,11 @@ namespace Wayfinder.UI.NetCore
                 }
                 else if (frameworkVersion <= DotNetFrameworkVersion.VERSION_5_0)
                 {
-                    lightness = 0.4f;
+                    lightness = 0.3f;
                 }
                 else if (frameworkVersion <= DotNetFrameworkVersion.VERSION_6_0)
                 {
-                    lightness = 0.2f;
+                    lightness = 0.1f;
                 }
                 else
                 {
@@ -1760,6 +1760,16 @@ namespace Wayfinder.UI.NetCore
             {
                 UpdateUIComponentVisibility(FilterTextBox.Text);
             }
+        }
+
+        private void Window_Loaded(object sender, EventArgs e)
+        {
+            _packageCache.Initialize();
+        }
+
+        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            _packageCache.CommitCache();
         }
     }
 }

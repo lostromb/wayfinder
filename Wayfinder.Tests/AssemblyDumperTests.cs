@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Wayfinder.DependencyResolver;
 using Wayfinder.DependencyResolver.Logger;
@@ -174,7 +175,8 @@ namespace Wayfinder.Tests
             NugetPackageCache packageCache = new NugetPackageCache(new DirectoryInfo[]
                 {
                     new DirectoryInfo("testdata\\nuget cache")
-                });
+                }, false);
+            packageCache.Initialize();
 
             FileInfo inputFile = new FileInfo("testdata\\nuget cache\\bond.runtime.csharp\\5.3.1\\lib\\net45\\Bond.JSON.dll");
             AssemblyData parsedData = _inspector.InspectSingleAssembly(inputFile, packageCache);
@@ -231,7 +233,8 @@ namespace Wayfinder.Tests
             //AssemblyData parsedData = _inspector.InspectSingleAssembly(inputFile, null);
             //Assert.IsNotNull(parsedData);
 
-            NugetPackageCache packageCache = new NugetPackageCache();
+            NugetPackageCache packageCache = new NugetPackageCache(false);
+            packageCache.Initialize();
             DirectoryInfo inputDir = new DirectoryInfo(@"C:\Code\WebCrawler\bin");
             ISet<DependencyGraphNode> graph = _inspector.BuildDependencyGraph(inputDir, packageCache);
             Assert.IsNotNull(graph);

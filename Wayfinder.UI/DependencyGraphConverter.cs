@@ -1,5 +1,4 @@
-﻿using Durandal.Common.Collections;
-using Durandal.Common.MathExt;
+﻿using Durandal.Common.MathExt;
 using OpenTK;
 using OpenTK.Mathematics;
 using System;
