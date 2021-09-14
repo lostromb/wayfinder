@@ -24,12 +24,24 @@ namespace Wayfinder.DependencyResolver.Schemas
 
         public DotNetFrameworkVersion(DotNetFrameworkType frameworkType, Version frameworkVersion)
         {
+            if (frameworkVersion == null)
+            {
+                throw new ArgumentNullException(nameof(frameworkVersion));
+            }
+
             FrameworkType = frameworkType;
             FrameworkVersion = frameworkVersion;
         }
 
         public DotNetFrameworkVersion(string assemblyFrameworkString)
         {
+            if (string.IsNullOrEmpty(assemblyFrameworkString))
+            {
+                FrameworkType = DotNetFrameworkType.Unknown;
+                FrameworkVersion = VERSION_0_0;
+                return;
+            }
+
             Match parserMatch = FrameworkVersionParser.Match(assemblyFrameworkString);
             if (parserMatch.Success)
             {
@@ -59,29 +71,31 @@ namespace Wayfinder.DependencyResolver.Schemas
                     }
                     else
                     {
-                        FrameworkVersion = new Version(0, 0);
+                        FrameworkVersion = VERSION_0_0;
                     }
                 }
                 else
                 {
-                    FrameworkVersion = new Version(0, 0);
+                    FrameworkVersion = VERSION_0_0;
                 }
             }
             else
             {
                 FrameworkType = DotNetFrameworkType.Unknown;
-                FrameworkVersion = new Version(0, 0);
+                FrameworkVersion = VERSION_0_0;
             }
         }
 
         private DotNetFrameworkVersion()
         {
+            FrameworkType = DotNetFrameworkType.Unknown;
+            FrameworkVersion = VERSION_0_0;
         }
 
         public void Serialize(BinaryWriter writer)
         {
             writer.Write((int)FrameworkType);
-            writer.Write(FrameworkVersion == null ? "" : FrameworkVersion.ToString());
+            writer.Write(FrameworkVersion == null ? string.Empty : FrameworkVersion.ToString());
         }
 
         public static DotNetFrameworkVersion Deserialize(BinaryReader reader)
@@ -114,7 +128,7 @@ namespace Wayfinder.DependencyResolver.Schemas
         public override int GetHashCode()
         {
             return FrameworkType.GetHashCode() ^
-                (FrameworkVersion ?? new Version(0, 0)).GetHashCode();
+                (FrameworkVersion ?? VERSION_0_0).GetHashCode();
         }
 
         public override string ToString()
@@ -148,5 +162,36 @@ namespace Wayfinder.DependencyResolver.Schemas
                 }
             }
         }
+
+        public static readonly Version VERSION_0_0 = new Version(0, 0);
+        public static readonly Version VERSION_1_0 = new Version("1.0");
+        public static readonly Version VERSION_1_1 = new Version("1.1");
+        public static readonly Version VERSION_1_2 = new Version("1.2");
+        public static readonly Version VERSION_1_3 = new Version("1.3");
+        public static readonly Version VERSION_1_4 = new Version("1.4");
+        public static readonly Version VERSION_1_5 = new Version("1.5");
+        public static readonly Version VERSION_1_6 = new Version("1.6");
+
+        public static readonly Version VERSION_2_0 = new Version("2.0");
+        public static readonly Version VERSION_2_1 = new Version("2.1");
+
+        public static readonly Version VERSION_3_0 = new Version("3.0");
+        public static readonly Version VERSION_3_1 = new Version("3.1");
+
+        public static readonly Version VERSION_4_0 = new Version("4.0");
+        public static readonly Version VERSION_4_5 = new Version("4.5");
+        public static readonly Version VERSION_4_5_1 = new Version("4.5.1");
+        public static readonly Version VERSION_4_5_2 = new Version("4.5.2");
+        public static readonly Version VERSION_4_6 = new Version("4.6");
+        public static readonly Version VERSION_4_6_1 = new Version("4.6.1");
+        public static readonly Version VERSION_4_6_2 = new Version("4.6.2");
+        public static readonly Version VERSION_4_7 = new Version("4.7");
+        public static readonly Version VERSION_4_7_1 = new Version("4.7.1");
+        public static readonly Version VERSION_4_7_2 = new Version("4.7.2");
+        public static readonly Version VERSION_4_8 = new Version("4.8");
+
+        public static readonly Version VERSION_5_0 = new Version("5.0");
+
+        public static readonly Version VERSION_6_0 = new Version("6.0");
     }
 }

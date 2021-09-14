@@ -773,86 +773,159 @@ namespace Wayfinder.UI.NetCore
             }
         }
 
+        private static Color4 BlendColors(Color4 a, Color4 b, float ratio)
+        {
+            if (ratio < 0 || ratio > 1.0f)
+            {
+                throw new ArgumentOutOfRangeException(nameof(ratio));
+            }
+
+            float iratio = 1.0f - ratio;
+            return new Color4(
+                (a.R * iratio) + (b.R * ratio),
+                (a.G * iratio) + (b.G * ratio),
+                (a.B * iratio) + (b.B * ratio),
+                (a.A * iratio) + (b.A * ratio));
+        }
+
         private static void ColorComponentByFrameworkVersion(UIComponent currentComponent, float alpha, out Color4 componentBottomColor, out Color4 componentTopColor)
         {
-            string framework = currentComponent?.BaseComponent?.AssemblyInfo?.AssemblyFramework;
-            if (string.IsNullOrEmpty(framework))
-            {
-                componentTopColor = new Color4(230f / 255f, 230f / 255f, 230f / 255f, alpha);
-                componentBottomColor = new Color4(230f / 255f, 230f / 255f, 230f / 255f, alpha);
-            }
-            else if (framework.Contains(".NETFramework"))
+            DotNetFrameworkType dotNetType = (currentComponent?.BaseComponent?.AssemblyInfo?.StructuredFrameworkVersion?.FrameworkType).GetValueOrDefault(DotNetFrameworkType.Unknown);
+            Version frameworkVersion = (currentComponent?.BaseComponent?.AssemblyInfo?.StructuredFrameworkVersion?.FrameworkVersion) ?? new Version(0, 0);
+            Color4 baseColor;
+
+            float lightness = 0.0f;
+            if (dotNetType == DotNetFrameworkType.NetFramework)
             {
                 // blue
-                componentTopColor = new Color4(178 / 255f, 181 / 255f, 235 / 255f, alpha);
-                componentBottomColor = new Color4(207 / 255f, 205 / 255f, 236 / 255f, alpha);
-                //if (framework.Contains("Version=v4.8"))
-                //{
-
-                //}
-                //else if (framework.Contains("Version=v4.7.2"))
-                //{
-
-                //}
-                //else if (framework.Contains("Version=v4.7.1"))
-                //{
-
-                //}
-                //else if (framework.Contains("Version=v4.7"))
-                //{
-
-                //}
-                //else if (framework.Contains("Version=v4.6.2"))
-                //{
-
-                //}
-                //else if (framework.Contains("Version=v4.6.1"))
-                //{
-
-                //}
-                //else if (framework.Contains("Version=v4.6"))
-                //{
-
-                //}
-                //else if (framework.Contains("Version=v4.5.2"))
-                //{
-
-                //}
-                //else if (framework.Contains("Version=v4.5.1"))
-                //{
-
-                //}
-                //else if (framework.Contains("Version=v4.5"))
-                //{
-
-                //}
-                //else
-                //{
-
-                //}
+                baseColor = new Color4(99 / 255f, 104 / 255f, 235 / 255f, 1.0f);
+                if (frameworkVersion <= DotNetFrameworkVersion.VERSION_4_0)
+                {
+                    lightness = 0.6f;
+                }
+                else if (frameworkVersion <= DotNetFrameworkVersion.VERSION_4_5)
+                {
+                    lightness = 0.55f;
+                }
+                else if (frameworkVersion <= DotNetFrameworkVersion.VERSION_4_5_1)
+                {
+                    lightness = 0.5f;
+                }
+                else if (frameworkVersion <= DotNetFrameworkVersion.VERSION_4_5_2)
+                {
+                    lightness = 0.45f;
+                }
+                else if (frameworkVersion <= DotNetFrameworkVersion.VERSION_4_6)
+                {
+                    lightness = 0.35f;
+                }
+                else if (frameworkVersion <= DotNetFrameworkVersion.VERSION_4_6_1)
+                {
+                    lightness = 0.3f;
+                }
+                else if (frameworkVersion <= DotNetFrameworkVersion.VERSION_4_6_2)
+                {
+                    lightness = 0.25f;
+                }
+                else if (frameworkVersion <= DotNetFrameworkVersion.VERSION_4_7)
+                {
+                    lightness = 0.15f;
+                }
+                else if (frameworkVersion <= DotNetFrameworkVersion.VERSION_4_7_1)
+                {
+                    lightness = 0.1f;
+                }
+                else if (frameworkVersion <= DotNetFrameworkVersion.VERSION_4_7_2)
+                {
+                    lightness = 0.05f;
+                }
+                else // 4.8
+                {
+                    lightness = 0.0f;
+                }
             }
-            else if (framework.Contains(".NETStandard"))
+            else if (dotNetType == DotNetFrameworkType.NetStandard)
+            {
+                // cyan
+                baseColor = new Color4(99 / 255f, 227 / 255f, 204 / 255f, 1.0f);
+
+                if (frameworkVersion <= DotNetFrameworkVersion.VERSION_1_0)
+                {
+                    lightness = 0.6f;
+                }
+                else if (frameworkVersion <= DotNetFrameworkVersion.VERSION_1_1)
+                {
+                    lightness = 0.55f;
+                }
+                else if (frameworkVersion <= DotNetFrameworkVersion.VERSION_1_2)
+                {
+                    lightness = 0.5f;
+                }
+                else if (frameworkVersion <= DotNetFrameworkVersion.VERSION_1_3)
+                {
+                    lightness = 0.45f;
+                }
+                else if (frameworkVersion <= DotNetFrameworkVersion.VERSION_1_4)
+                {
+                    lightness = 0.4f;
+                }
+                else if (frameworkVersion <= DotNetFrameworkVersion.VERSION_1_5)
+                {
+                    lightness = 0.35f;
+                }
+                else if (frameworkVersion <= DotNetFrameworkVersion.VERSION_1_6)
+                {
+                    lightness = 0.3f;
+                }
+                else if (frameworkVersion <= DotNetFrameworkVersion.VERSION_2_0)
+                {
+                    lightness = 0.15f;
+                }
+                else // 2.1
+                {
+                    lightness = 0.0f;
+                }
+            }
+            else if (dotNetType == DotNetFrameworkType.NetCore)
             {
                 // green
-                componentTopColor = new Color4(178 / 255f, 245 / 255f, 182 / 255f, alpha);
-                componentBottomColor = new Color4(205 / 255f, 236 / 255f, 207 / 255f, alpha);
-                //else if (framework.Contains("Version=v2.0"))
-                //{
-
-                //}
-            }
-            else if (framework.Contains(".NETCoreApp"))
-            {
-                // light red
-                componentTopColor = new Color4(233 / 255f, 213 / 255f, 205 / 255f, alpha);
-                componentBottomColor = new Color4(238 / 255f, 226 / 255f, 221 / 255f, alpha);
+                baseColor = new Color4(114 / 255f, 227 / 255f, 99 / 255f, 1.0f);
+                if (frameworkVersion <= DotNetFrameworkVersion.VERSION_3_0)
+                {
+                    lightness = 0.6f;
+                }
+                else if (frameworkVersion <= DotNetFrameworkVersion.VERSION_3_1)
+                {
+                    lightness = 0.5f;
+                }
+                else if (frameworkVersion <= DotNetFrameworkVersion.VERSION_5_0)
+                {
+                    lightness = 0.4f;
+                }
+                else if (frameworkVersion <= DotNetFrameworkVersion.VERSION_6_0)
+                {
+                    lightness = 0.2f;
+                }
+                else
+                {
+                    lightness = 0.0f;
+                }
             }
             else
             {
                 // Grey I guess
-                componentTopColor = new Color4(230f / 255f, 230f / 255f, 230f / 255f, alpha);
-                componentBottomColor = new Color4(230f / 255f, 230f / 255f, 230f / 255f, alpha);
+                baseColor = new Color4(230 / 255f, 230 / 255f, 230 / 255f, 1.0f);
             }
+
+            // Calculate final bottom color based on lightness
+            componentBottomColor = BlendColors(baseColor, Color4.White, lightness);
+
+            // And make top color a little lighter than that
+            componentTopColor = BlendColors(componentBottomColor, Color4.White, 0.2f);
+
+            // Finally, apply overall alpha
+            componentBottomColor.A = alpha;
+            componentTopColor.A = alpha;
         }
 
         private void DrawComponentRecursive(UIComponent currentComponent, ComponentColorBy colorBy)
