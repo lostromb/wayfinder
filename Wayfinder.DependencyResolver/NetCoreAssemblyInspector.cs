@@ -38,7 +38,7 @@ namespace Wayfinder.DependencyResolver
 
         private AssemblyData InspectSingleAssemblyWithoutLoadContext(FileInfo assemblyFile)
         {
-            AssemblyLoaderProxy proxy = new AssemblyLoaderProxy();
+            NetCoreAssemblyLoaderProxy proxy = new NetCoreAssemblyLoaderProxy();
             byte[] serializedAssemblyData = proxy.Process(assemblyFile.FullName);
             AssemblyData returnVal = AssemblyData.Deserialize(serializedAssemblyData);
             return returnVal;
@@ -47,7 +47,7 @@ namespace Wayfinder.DependencyResolver
         private AssemblyData InspectSingleAssemblyWithLoadContext(FileInfo assemblyFile)
         {
             WayfinderPluginLoadContext loadContext = new WayfinderPluginLoadContext(_logger, runtimeDirectory: new DirectoryInfo(Environment.CurrentDirectory), containerDirectory: assemblyFile.Directory);
-            AssemblyName assemblyName = typeof(AssemblyLoaderProxy).Assembly.GetName();
+            AssemblyName assemblyName = typeof(NetCoreAssemblyLoaderProxy).Assembly.GetName();
             Assembly containerHostAssembly = loadContext.LoadFromAssemblyName(assemblyName);
             if (containerHostAssembly == null)
             {
@@ -55,7 +55,7 @@ namespace Wayfinder.DependencyResolver
                 return null;
             }
 
-            string containerGuestTypeName = typeof(AssemblyLoaderProxy).FullName;
+            string containerGuestTypeName = typeof(NetCoreAssemblyLoaderProxy).FullName;
             Type containerGuestType = containerHostAssembly.ExportedTypes.FirstOrDefault(t => string.Equals(t.FullName, containerGuestTypeName));
             object containerGuest = Activator.CreateInstance(containerGuestType);
             if (containerGuest == null)
@@ -66,7 +66,7 @@ namespace Wayfinder.DependencyResolver
 
             // For some reason we run into troubles when just trying to cast the returned object as an IContainerGuest (probably because the defining assemblies of the interface are different).
             // So we have to use reflection to find the initialization method and invoke it
-            MethodInfo initializeMethodSig = containerGuest.GetType().GetMethod(nameof(AssemblyLoaderProxy.Process), new Type[] { typeof(string) });
+            MethodInfo initializeMethodSig = containerGuest.GetType().GetMethod(nameof(NetCoreAssemblyLoaderProxy.Process), new Type[] { typeof(string) });
             if (initializeMethodSig == null)
             {
                 _logger.Log("Error while looking for Process method on load context container.", LogLevel.Err);

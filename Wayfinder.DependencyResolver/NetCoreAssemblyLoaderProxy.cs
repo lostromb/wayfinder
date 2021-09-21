@@ -18,7 +18,7 @@ namespace Wayfinder.DependencyResolver
     /// <summary>
     /// Proxy for loading assemblies in a self-contained container such as an assembly load context
     /// </summary>
-    public class AssemblyLoaderProxy
+    public class NetCoreAssemblyLoaderProxy
     {
         public byte[] Process(string fileName)
         {

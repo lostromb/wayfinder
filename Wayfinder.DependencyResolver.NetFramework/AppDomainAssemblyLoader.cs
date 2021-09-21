@@ -115,6 +115,7 @@ namespace Wayfinder.DependencyResolver.NetFramework
                     if (targetFramework != null)
                     {
                         returnVal.AssemblyFramework = targetFramework.FrameworkName;
+                        returnVal.StructuredFrameworkVersion = new DotNetFrameworkVersion(targetFramework.FrameworkName);
                     }
 
                     AssemblyFileVersionAttribute fileVersion = loadFromAssembly.GetCustomAttribute<AssemblyFileVersionAttribute>();
