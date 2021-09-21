@@ -80,6 +80,7 @@ namespace Wayfinder.UI.NetCore
             _logger = new Wayfinder.Common.Logger.DebugLogger();
 
             List<IAssemblyInspector> inspectors = new List<IAssemblyInspector>();
+            _nativeInspector = new NativeAssemblyInspector(_logger);
             inspectors.Add(new NetCoreAssemblyInspector(_logger, true));
             inspectors.Add(new NetFrameworkAssemblyInspectorExeWrapper(_logger, new FileInfo(@".\Wayfinder.DependencyResolver.NetFramework.exe")));
             inspectors.Add(_nativeInspector);

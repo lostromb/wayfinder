@@ -232,26 +232,53 @@ namespace Wayfinder.DependencyResolver
             return true;
         }
 
+        private class AssemblyInspectorWorkItem : ThreadedWorkItem<AssemblyData>
+        {
+            private readonly Func<FileInfo, NugetPackageCache, AssemblyData> _delegate;
+            private readonly FileInfo _arg1;
+            private readonly NugetPackageCache _arg2;
+
+            public AssemblyInspectorWorkItem(Func<FileInfo, NugetPackageCache, AssemblyData> workDelegate, FileInfo arg1, NugetPackageCache arg2)
+            {
+                _delegate = workDelegate;
+                _arg1 = arg1;
+                _arg2 = arg2;
+            }
+
+            protected override AssemblyData DoWork()
+            {
+                return _delegate(_arg1, _arg2);
+            }
+        }
+
         public ISet<DependencyGraphNode> BuildDependencyGraph(DirectoryInfo projectDirectory, NugetPackageCache nugetPackageCache)
         {
             HashSet<DependencyGraphNode> nodes = new HashSet<DependencyGraphNode>();
+            List<AssemblyInspectorWorkItem> inspectorWorkItems = new List<AssemblyInspectorWorkItem>();
             foreach (FileInfo assemblyFile in projectDirectory.EnumerateFiles("*", SearchOption.AllDirectories))
             {
                 if (string.Equals(assemblyFile.Extension, ".dll", StringComparison.OrdinalIgnoreCase) ||
                     string.Equals(assemblyFile.Extension, ".exe", StringComparison.OrdinalIgnoreCase))
                 {
-                    try
+                    AssemblyInspectorWorkItem newWorkItem = new AssemblyInspectorWorkItem(InspectSingleAssembly, assemblyFile, nugetPackageCache);
+                    Task.Run(newWorkItem.Run);
+                    inspectorWorkItems.Add(newWorkItem);
+                }
+            }
+
+            foreach (AssemblyInspectorWorkItem workItem in inspectorWorkItems)
+            {
+                try
+                {
+                    AssemblyData nodeData = workItem.Join();
+                    if (nodeData != null)
                     {
-                        AssemblyData nodeData = InspectSingleAssembly(assemblyFile, nugetPackageCache);
-                        if (nodeData != null)
-                        {
-                            nodes.Add(new DependencyGraphNode(nodeData));
-                        }
+                        nodes.Add(new DependencyGraphNode(nodeData));
                     }
-                    catch (Exception e)
-                    {
-                        _logger.Log(e.ToString(), LogLevel.Err);
-                    }
+                }
+                catch (Exception e)
+                {
+                    _logger.Log(e.ToString(), LogLevel.Err);
                 }
             }
 
