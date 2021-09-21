@@ -18,9 +18,11 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
+using Wayfinder.Common;
+using Wayfinder.Common.Nuget;
+using Wayfinder.Common.Schemas;
 using Wayfinder.DependencyResolver;
-using Wayfinder.DependencyResolver.Nuget;
-using Wayfinder.DependencyResolver.Schemas;
+using Wayfinder.DependencyResolver.Native;
 using Wayfinder.UI;
 using Wayfinder.UI.Schemas;
 using WayfinderUI;
@@ -30,12 +32,15 @@ namespace Wayfinder.UI.NetCore
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class MainWindow : Window, IDisposable
     {
         private readonly object _mutex;
         private readonly IDictionary<Guid, UIComponent> _uiComponents = new Dictionary<Guid, UIComponent>();
         private readonly NugetPackageCache _packageCache;
-        private readonly Wayfinder.DependencyResolver.Logger.ILogger _logger;
+        private readonly Wayfinder.Common.Logger.ILogger _logger;
+
+        private readonly NativeAssemblyInspector _nativeInspector;
+        private readonly AssemblyAnalyzer _analyzer;
 
         private Project _project;
         private Guid _selectedComponentId = Guid.Empty;
@@ -67,11 +72,19 @@ namespace Wayfinder.UI.NetCore
         private readonly Counter<GuidPair> _cachedLinePairs = new Counter<GuidPair>();
 
 
+
         public MainWindow()
         {
             _mutex = new object();
             _project = new Project();
-            _logger = new Wayfinder.DependencyResolver.Logger.DebugLogger();
+            _logger = new Wayfinder.Common.Logger.DebugLogger();
+
+            List<IAssemblyInspector> inspectors = new List<IAssemblyInspector>();
+            inspectors.Add(new NetCoreAssemblyInspector(_logger, true));
+            inspectors.Add(new NetFrameworkAssemblyInspectorExeWrapper(_logger, new FileInfo(@".\Wayfinder.DependencyResolver.NetFramework.exe")));
+            inspectors.Add(_nativeInspector);
+
+            _analyzer = new AssemblyAnalyzer(_logger, inspectors);
 
             InitializeProject();
             InitializeComponent();
@@ -86,6 +99,7 @@ namespace Wayfinder.UI.NetCore
 
         ~MainWindow()
         {
+            Dispose(false);
         }
 
         private Task SaveDocumentInBackground(IRealTimeProvider realTime)
@@ -1459,44 +1473,38 @@ namespace Wayfinder.UI.NetCore
                     if (Directory.Exists(path))
                     {
                         StatusLabel.Content = "Inspecting directory " + path + ", this can take a few minutes!";
-                        using (AssemblyInspector inspector = new AssemblyInspector(_logger))
+                        DirectoryInfo inputDir = new DirectoryInfo(path);
+                        newProject = await Task.Run(() =>
                         {
-                            DirectoryInfo inputDir = new DirectoryInfo(path);
-                            newProject = await Task.Run(() =>
+                            try
                             {
-                                try
-                                {
-                                    ISet<DependencyGraphNode> graph = inspector.BuildDependencyGraph(inputDir, _packageCache);
-                                    return DependencyGraphConverter.ConvertDependencyGraphToProject(graph, _logger);
-                                }
-                                catch (Exception ex)
-                                {
-                                    Debug.WriteLine(ex.Message);
-                                    return null;
-                                }
-                            });
-                        }
+                                ISet<DependencyGraphNode> graph = _analyzer.BuildDependencyGraph(inputDir, _packageCache);
+                                return DependencyGraphConverter.ConvertDependencyGraphToProject(graph, _logger);
+                            }
+                            catch (Exception ex)
+                            {
+                                Debug.WriteLine(ex.Message);
+                                return null;
+                            }
+                        });
                     }
                     else if (File.Exists(path))
                     {
                         StatusLabel.Content = "Inspecting file " + path + ", please wait!";
-                        using (AssemblyInspector inspector = new AssemblyInspector(_logger))
+                        FileInfo inputFile = new FileInfo(path);
+                        newProject = await Task.Run(() =>
                         {
-                            FileInfo inputFile = new FileInfo(path);
-                            newProject = await Task.Run(() =>
+                            try
                             {
-                                try
-                                {
-                                    ISet<DependencyGraphNode> graph = inspector.BuildDependencyGraph(inputFile, _packageCache);
-                                    return DependencyGraphConverter.ConvertDependencyGraphToProject(graph, _logger);
-                                }
-                                catch (Exception ex)
-                                {
-                                    Debug.WriteLine(ex.Message);
-                                    return null;
-                                }
-                            });
-                        }
+                                ISet<DependencyGraphNode> graph = _analyzer.BuildDependencyGraph(inputFile, _packageCache);
+                                return DependencyGraphConverter.ConvertDependencyGraphToProject(graph, _logger);
+                            }
+                            catch (Exception ex)
+                            {
+                                Debug.WriteLine(ex.Message);
+                                return null;
+                            }
+                        });
                     }
                     else
                     {
@@ -1770,6 +1778,20 @@ namespace Wayfinder.UI.NetCore
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
             _packageCache.CommitCache();
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                _nativeInspector?.Dispose();
+            }
         }
     }
 }

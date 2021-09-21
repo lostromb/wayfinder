@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Wayfinder.DependencyResolver.Logger
+namespace Wayfinder.Common.Logger
 {
     public interface ILogger
     {

@@ -6,11 +6,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Wayfinder.DependencyResolver
+namespace Wayfinder.Common
 {
     public static class ProcessInvoker
     {
-        public static List<string> RunProcessAndReturnOutput(string processName, string args)
+        public static List<string> RunProcessAndReturnOutputAsLines(string processName, string args)
         {
             List<string> returnVal = new List<string>();
             ProcessStartInfo processInfo = new ProcessStartInfo

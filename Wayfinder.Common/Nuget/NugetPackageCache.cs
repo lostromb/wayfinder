@@ -7,9 +7,9 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Wayfinder.DependencyResolver.Schemas;
+using Wayfinder.Common.Schemas;
 
-namespace Wayfinder.DependencyResolver.Nuget
+namespace Wayfinder.Common.Nuget
 {
     public class NugetPackageCache
     {
@@ -206,7 +206,7 @@ namespace Wayfinder.DependencyResolver.Nuget
                 }
 
                 returnVal = builder.ToString().ToLowerInvariant();
-                _md5Cache.TryAdd(fileName, returnVal);
+                _md5Cache[fileName] = returnVal;
             }
 
             return returnVal;

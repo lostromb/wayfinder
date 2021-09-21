@@ -51,6 +51,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Wayfinder.DependencyResolver.Native\Wayfinder.DependencyResolver.Native.csproj" />
+    <ProjectReference Include="..\Wayfinder.DependencyResolver.NetFramework\Wayfinder.DependencyResolver.NetFramework.csproj" />
     <ProjectReference Include="..\Wayfinder.DependencyResolver\Wayfinder.DependencyResolver.csproj" />
     <ProjectReference Include="..\Wayfinder.QuickFont\Wayfinder.QuickFont.csproj" />
   </ItemGroup>

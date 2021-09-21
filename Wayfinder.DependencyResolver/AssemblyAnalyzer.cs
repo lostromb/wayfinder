@@ -5,46 +5,29 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Remoting;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
-using Wayfinder.DependencyResolver.Logger;
-using Wayfinder.DependencyResolver.Nuget;
-using Wayfinder.DependencyResolver.Schemas;
+using Wayfinder.Common;
+using Wayfinder.Common.Logger;
+using Wayfinder.Common.Nuget;
+using Wayfinder.Common.Schemas;
 
 namespace Wayfinder.DependencyResolver
 {
-    public class AssemblyInspector : IDisposable
+    public class AssemblyAnalyzer
     {
+        private readonly IList<IAssemblyInspector> _inspectors;
         private readonly IDictionary<FileInfo, AssemblyData> _resolvedAssemblyCache = new Dictionary<FileInfo, AssemblyData>();
         private readonly ILogger _logger;
 
-        public AssemblyInspector(ILogger logger)
+        public AssemblyAnalyzer(ILogger logger, IList<IAssemblyInspector> inspectors)
         {
             _logger = logger ?? NullLogger.Singleton;
-            // Unpack native helper assemblies (dumpbin.exe)
-            try
+            _inspectors = inspectors;
+            if (_inspectors == null)
             {
-                File.WriteAllBytes("dumpbin.exe", NativeAssemblies.dumpbin);
-                File.WriteAllBytes("link.exe", NativeAssemblies.link);
-                File.WriteAllBytes("mspdbcore.dll", NativeAssemblies.mspdbcore);
-            }
-            catch (Exception)
-            {
-                Console.WriteLine("Warning: Failed to load native DLL inspection tools. Reflection on native DLLs will not be supported");
-            }
-        }
-
-        public void Dispose()
-        {
-            try
-            {
-                if (File.Exists("dumpbin.exe")) File.Delete("dumpbin.exe");
-                if (File.Exists("link.exe")) File.Delete("link.exe");
-                if (File.Exists("mspdbcore.dll")) File.Delete("mspdbcore.dll");
-            }
-            catch (Exception)
-            {
-                Console.WriteLine("Warning: Failed to load native DLL inspection tools. Reflection on native DLLs will not be supported");
+                throw new ArgumentNullException(nameof(inspectors));
             }
         }
 
@@ -61,15 +44,48 @@ namespace Wayfinder.DependencyResolver
                 return _resolvedAssemblyCache[assemblyFile];
             }
 
-            //Debug.WriteLine("Inspecting " + assemblyFile.Name);
-            AssemblyData returnVal;
-            if (Debugger.IsAttached)
+            AssemblyData returnVal = null;
+            AssemblyData bestNonNullResult = null;
+            foreach (var inspector in _inspectors)
             {
-                returnVal = InspectSingleAssemblyWithoutAppDomain(assemblyFile);
+                try
+                {
+                    _logger.Log("Inspecting " + assemblyFile.FullName + " using " + inspector.InspectorName, LogLevel.Std);
+                    returnVal = inspector.InspectAssemblyFile(assemblyFile);
+                    if (returnVal != null)
+                    {
+                        bestNonNullResult = returnVal;
+                        if (string.IsNullOrEmpty(returnVal.LoaderError))
+                        {
+                            _logger.Log("Got valid analysis data from " + inspector.InspectorName, LogLevel.Std);
+                            break;
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    _logger.Log(e.ToString(), LogLevel.Wrn);
+                }
             }
-            else
+
+            // Fall back to the best non-null results we can find
+            returnVal = returnVal ?? bestNonNullResult ?? new AssemblyData();
+
+            if (returnVal.AssemblyFilePath == null)
             {
-                returnVal = InspectSingleAssemblyWithAppDomain(assemblyFile);
+                returnVal.AssemblyFilePath = assemblyFile;
+            }
+            if (string.IsNullOrEmpty(returnVal.AssemblyBinaryName))
+            {
+                returnVal.AssemblyBinaryName = UbiquitousHelpers.TrimAssemblyFileExtension(assemblyFile.Name);
+            }
+            if (string.IsNullOrEmpty(returnVal.AssemblyHashMD5))
+            {
+                returnVal.AssemblyHashMD5 = GetMD5HashOfFile(assemblyFile.FullName);
+            }
+            if (returnVal.LoaderError == null)
+            {
+                returnVal.LoaderError = string.Empty;
             }
 
             _resolvedAssemblyCache[assemblyFile] = returnVal;
@@ -118,6 +134,29 @@ namespace Wayfinder.DependencyResolver
 
             CalculateConnectionCounts(nodes);
             return nodes;
+        }
+
+        private static string GetMD5HashOfFile(string fileName)
+        {
+            if (!File.Exists(fileName))
+            {
+                return string.Empty;
+            }
+
+            MD5 hasher = MD5.Create();
+            hasher.Initialize();
+            StringBuilder returnVal = new StringBuilder();
+            using (FileStream stream = new FileStream(fileName, FileMode.Open, FileAccess.Read))
+            {
+                byte[] hash = hasher.ComputeHash(stream);
+                stream.Close();
+                foreach (byte x in hash)
+                {
+                    returnVal.Append(x.ToString("X"));
+                }
+            }
+
+            return returnVal.ToString().ToLowerInvariant();
         }
 
         private static void CalculateConnectionCounts(ISet<DependencyGraphNode> nodes)
@@ -201,10 +240,17 @@ namespace Wayfinder.DependencyResolver
                 if (string.Equals(assemblyFile.Extension, ".dll", StringComparison.OrdinalIgnoreCase) ||
                     string.Equals(assemblyFile.Extension, ".exe", StringComparison.OrdinalIgnoreCase))
                 {
-                    AssemblyData nodeData = InspectSingleAssembly(assemblyFile, nugetPackageCache);
-                    if (nodeData != null)
+                    try
                     {
-                        nodes.Add(new DependencyGraphNode(nodeData));
+                        AssemblyData nodeData = InspectSingleAssembly(assemblyFile, nugetPackageCache);
+                        if (nodeData != null)
+                        {
+                            nodes.Add(new DependencyGraphNode(nodeData));
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        _logger.Log(e.ToString(), LogLevel.Err);
                     }
                 }
             }
@@ -420,59 +466,5 @@ namespace Wayfinder.DependencyResolver
         //        }
         //    }
         //}
-
-        private static AssemblyData InspectSingleAssemblyWithoutAppDomain(FileInfo assemblyFile)
-        {
-            AssemblyLoaderProxy proxy = new AssemblyLoaderProxy();
-            byte[] serializedAssemblyData = proxy.Process(assemblyFile.FullName);
-            AssemblyData returnVal = AssemblyData.Deserialize(serializedAssemblyData);
-            return returnVal;
-        }
-
-        private AssemblyData InspectSingleAssemblyWithAppDomain(FileInfo assemblyFile)
-        {
-            WayfinderPluginLoadContext loadContext = new WayfinderPluginLoadContext(_logger, runtimeDirectory: new DirectoryInfo(Environment.CurrentDirectory), containerDirectory: assemblyFile.Directory);
-            AssemblyName assemblyName = typeof(AssemblyLoaderProxy).Assembly.GetName();
-            Assembly containerHostAssembly = loadContext.LoadFromAssemblyName(assemblyName);
-            if (containerHostAssembly == null)
-            {
-                _logger.Log("Could not find entry point dll " + assemblyName + " to use to create load context guest.", LogLevel.Err);
-                return null;
-            }
-
-            string containerGuestTypeName = typeof(AssemblyLoaderProxy).FullName;
-            Type containerGuestType = containerHostAssembly.ExportedTypes.FirstOrDefault(t => string.Equals(t.FullName, containerGuestTypeName));
-            object containerGuest = Activator.CreateInstance(containerGuestType);
-            if (containerGuest == null)
-            {
-                _logger.Log("Error while creating remoting proxy to load context container.", LogLevel.Err);
-                return null;
-            }
-
-            // For some reason we run into troubles when just trying to cast the returned object as an IContainerGuest (probably because the defining assemblies of the interface are different).
-            // So we have to use reflection to find the initialization method and invoke it
-            MethodInfo initializeMethodSig = containerGuest.GetType().GetMethod(nameof(AssemblyLoaderProxy.Process), new Type[] { typeof(string) });
-            if (initializeMethodSig == null)
-            {
-                _logger.Log("Error while looking for Process method on load context container.", LogLevel.Err);
-                return null;
-            }
-
-            _logger.Log("Initializing load context guest for " + assemblyFile.FullName, LogLevel.Vrb);
-            // Make sure we set the AssemblyLoadContext.CurrentContextualReflectionContext at initialization
-            using (var scope = loadContext.EnterContextualReflection())
-            {
-                object uncastReturnVal = initializeMethodSig.Invoke(containerGuest, new object[] { assemblyFile.FullName });
-                byte[] serializedAssemblyData = uncastReturnVal as byte[];
-                if (serializedAssemblyData == null)
-                {
-                    _logger.Log("Error while parsing response AssemblyData from remote container host.", LogLevel.Err);
-                    return null;
-                }
-
-                AssemblyData returnVal = AssemblyData.Deserialize(serializedAssemblyData);
-                return returnVal;
-            }
-        }
     }
 }

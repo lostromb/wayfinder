@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Wayfinder.DependencyResolver
+namespace Wayfinder.Common.Schemas
 {
     /// <summary>
     /// A rule usually derived from a dll.config file which alters the assembly binding logic, such as a version override

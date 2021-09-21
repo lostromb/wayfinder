@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Wayfinder.DependencyResolver.Schemas;
+using Wayfinder.Common.Schemas;
 
-namespace Wayfinder.DependencyResolver
+namespace Wayfinder.Common
 {
     public static class UbiquitousHelpers
     {
@@ -40,6 +40,24 @@ namespace Wayfinder.DependencyResolver
             else
             {
                 return AssemblyReferenceType.Unknown;
+            }
+        }
+
+        /// <summary>
+        /// Removes .exe and .dll suffix on a file name
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <returns></returns>
+        public static string TrimAssemblyFileExtension(string fileName)
+        {
+            if (fileName.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) ||
+                fileName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+            {
+                return fileName.Substring(0, fileName.LastIndexOf('.'));
+            }
+            else
+            {
+                return fileName;
             }
         }
 

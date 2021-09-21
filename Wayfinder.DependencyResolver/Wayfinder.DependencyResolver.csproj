@@ -6,18 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Update="NativeAssemblies.Designer.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>NativeAssemblies.resx</DependentUpon>
-    </Compile>
-  </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Update="NativeAssemblies.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>NativeAssemblies.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
+    <ProjectReference Include="..\Wayfinder.Common\Wayfinder.Common.csproj" />
   </ItemGroup>
 
 </Project>

@@ -8,8 +8,10 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
+using Wayfinder.Common.Schemas;
+using Wayfinder.Common;
+using Wayfinder.Common.Logger;
 using Wayfinder.DependencyResolver;
-using Wayfinder.DependencyResolver.Logger;
 using Wayfinder.UI.Schemas;
 
 namespace Wayfinder.UI
@@ -28,7 +30,7 @@ namespace Wayfinder.UI
                 newComponent.AssemblyInfo = node.ThisAssembly;
                 newComponent.HasDependents = node.IncomingConnections > 0;
 
-                if (node.ThisAssembly.AssemblyType == DependencyResolver.Schemas.BinaryType.Managed)
+                if (node.ThisAssembly.AssemblyType == BinaryType.Managed)
                 {
                     if (node.ThisAssembly.AssemblyFilePath == null)
                     {

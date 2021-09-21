@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Wayfinder.DependencyResolver.Nuget
+namespace Wayfinder.Common.Nuget
 {
     public class NugetAssemblyResolutionResult
     {

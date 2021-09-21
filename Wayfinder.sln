@@ -11,9 +11,15 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Wayfinder.Tests", "Wayfinde
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Wayfinder.UI", "Wayfinder.UI\Wayfinder.UI.csproj", "{53FDFAF4-A81A-4D5B-924E-819511595706}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Wayfinder.QuickFont", "Wayfinder.QuickFont\Wayfinder.QuickFont.csproj", "{DF37F7E0-2DB7-46D7-9F31-F067CCA79C41}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Wayfinder.QuickFont", "Wayfinder.QuickFont\Wayfinder.QuickFont.csproj", "{DF37F7E0-2DB7-46D7-9F31-F067CCA79C41}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Wayfinder.SharpFont", "Wayfinder.SharpFont\Wayfinder.SharpFont.csproj", "{895E377B-E721-4503-A401-F5147DF9583E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Wayfinder.SharpFont", "Wayfinder.SharpFont\Wayfinder.SharpFont.csproj", "{895E377B-E721-4503-A401-F5147DF9583E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Wayfinder.Common", "Wayfinder.Common\Wayfinder.Common.csproj", "{51388A5E-BDF1-45D7-920D-020FF7854022}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Wayfinder.DependencyResolver.Native", "Wayfinder.DependencyResolver.Native\Wayfinder.DependencyResolver.Native.csproj", "{0F2D689D-B05F-49BD-908C-3DF0DA9B82DC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Wayfinder.DependencyResolver.NetFramework", "Wayfinder.DependencyResolver.NetFramework\Wayfinder.DependencyResolver.NetFramework.csproj", "{4F2405AE-512B-474F-A0ED-CDFCB6214756}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -71,6 +77,30 @@ Global
 		{895E377B-E721-4503-A401-F5147DF9583E}.Release|Any CPU.Build.0 = Release|Any CPU
 		{895E377B-E721-4503-A401-F5147DF9583E}.Release|x64.ActiveCfg = Release|Any CPU
 		{895E377B-E721-4503-A401-F5147DF9583E}.Release|x64.Build.0 = Release|Any CPU
+		{51388A5E-BDF1-45D7-920D-020FF7854022}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{51388A5E-BDF1-45D7-920D-020FF7854022}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{51388A5E-BDF1-45D7-920D-020FF7854022}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{51388A5E-BDF1-45D7-920D-020FF7854022}.Debug|x64.Build.0 = Debug|Any CPU
+		{51388A5E-BDF1-45D7-920D-020FF7854022}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{51388A5E-BDF1-45D7-920D-020FF7854022}.Release|Any CPU.Build.0 = Release|Any CPU
+		{51388A5E-BDF1-45D7-920D-020FF7854022}.Release|x64.ActiveCfg = Release|Any CPU
+		{51388A5E-BDF1-45D7-920D-020FF7854022}.Release|x64.Build.0 = Release|Any CPU
+		{0F2D689D-B05F-49BD-908C-3DF0DA9B82DC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0F2D689D-B05F-49BD-908C-3DF0DA9B82DC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0F2D689D-B05F-49BD-908C-3DF0DA9B82DC}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{0F2D689D-B05F-49BD-908C-3DF0DA9B82DC}.Debug|x64.Build.0 = Debug|Any CPU
+		{0F2D689D-B05F-49BD-908C-3DF0DA9B82DC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0F2D689D-B05F-49BD-908C-3DF0DA9B82DC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0F2D689D-B05F-49BD-908C-3DF0DA9B82DC}.Release|x64.ActiveCfg = Release|Any CPU
+		{0F2D689D-B05F-49BD-908C-3DF0DA9B82DC}.Release|x64.Build.0 = Release|Any CPU
+		{4F2405AE-512B-474F-A0ED-CDFCB6214756}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4F2405AE-512B-474F-A0ED-CDFCB6214756}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4F2405AE-512B-474F-A0ED-CDFCB6214756}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{4F2405AE-512B-474F-A0ED-CDFCB6214756}.Debug|x64.Build.0 = Debug|Any CPU
+		{4F2405AE-512B-474F-A0ED-CDFCB6214756}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4F2405AE-512B-474F-A0ED-CDFCB6214756}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4F2405AE-512B-474F-A0ED-CDFCB6214756}.Release|x64.ActiveCfg = Release|Any CPU
+		{4F2405AE-512B-474F-A0ED-CDFCB6214756}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

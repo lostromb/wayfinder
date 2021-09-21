@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Wayfinder.DependencyResolver.Schemas;
+using Wayfinder.Common.Schemas;
 
-namespace Wayfinder.DependencyResolver
+namespace Wayfinder.Common.Schemas
 {
     public class DependencyGraphNode
     {

@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace Wayfinder.DependencyResolver {
+namespace Wayfinder.DependencyResolver.Native {
     using System;
     
     
@@ -39,7 +39,7 @@ namespace Wayfinder.DependencyResolver {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Wayfinder.DependencyResolver.NativeAssemblies", typeof(NativeAssemblies).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Wayfinder.DependencyResolver.Native.NativeAssemblies", typeof(NativeAssemblies).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;

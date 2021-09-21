@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Wayfinder.DependencyResolver
+namespace Wayfinder.Common.Schemas
 {
     [Flags]
     public enum AssemblyInspectionType

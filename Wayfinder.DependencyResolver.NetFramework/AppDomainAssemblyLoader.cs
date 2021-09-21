@@ -13,17 +13,19 @@ using System.Xml;
 using Wayfinder.Common;
 using Wayfinder.Common.Schemas;
 
-namespace Wayfinder.DependencyResolver
+namespace Wayfinder.DependencyResolver.NetFramework
 {
     /// <summary>
-    /// Proxy for loading assemblies in a self-contained container such as an assembly load context
+    /// Proxy for loading assemblies in a self-contained app domain
     /// </summary>
-    public class AssemblyLoaderProxy
+    public class AppDomainAssemblyLoader : MarshalByRefObject
     {
         public byte[] Process(string fileName)
         {
+            Assembly reflectionOnlyLoadFromAssembly = null;
             Assembly loadFromAssembly = null;
             ExceptionDispatchInfo loadException = null;
+
             AssemblyData returnVal = new AssemblyData();
             returnVal.AssemblyFilePath = new FileInfo(fileName);
 
@@ -35,56 +37,50 @@ namespace Wayfinder.DependencyResolver
             {
                 try
                 {
-                    loadFromAssembly = Assembly.LoadFrom(fileName);
+                    // Try to load reflection-only first
+                    reflectionOnlyLoadFromAssembly = Assembly.ReflectionOnlyLoadFrom(fileName);
+
+                    try
+                    {
+                        // Then try to load fully
+                        loadFromAssembly = Assembly.LoadFrom(fileName);
+                    }
+                    catch (Exception e)
+                    {
+                        loadException = ExceptionDispatchInfo.Capture(e);
+                    }
                 }
                 catch (Exception e)
                 {
                     loadException = ExceptionDispatchInfo.Capture(e);
                 }
-
-                UpdateManagedDllInfo(returnVal, loadFromAssembly, loadException);
+               
+                UpdateManagedDllInfo(returnVal, loadFromAssembly, reflectionOnlyLoadFromAssembly, loadException);
             }
 
             return returnVal.Serialize();
         }
 
-        /// <summary>
-        /// Removes .exe and .dll suffix on a file name
-        /// </summary>
-        /// <param name="fileName"></param>
-        /// <returns></returns>
-        private static string TrimAssemblyFileExtension(string fileName)
-        {
-            if (fileName.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) ||
-                fileName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
-            {
-                return fileName.Substring(0, fileName.LastIndexOf('.'));
-            }
-            else
-            {
-                return fileName;
-            }
-        }
-
         private static void UpdateManagedDllInfo(
             AssemblyData returnVal,
             Assembly loadFromAssembly,
+            Assembly reflectionOnlyLoadFromAssembly,
             ExceptionDispatchInfo loadException)
         {
-            if (loadFromAssembly == null)
+            if (reflectionOnlyLoadFromAssembly == null)
             {
                 returnVal.LoaderError = "Unable to determine any information from the assembly. " + loadException.SourceException.GetType().Name + ": " + loadException.SourceException.Message;
                 return;
             }
 
             returnVal.AssemblyType = BinaryType.Managed;
-            AssemblyName fullName = loadFromAssembly.GetName();
+            AssemblyName fullName = reflectionOnlyLoadFromAssembly.GetName();
             returnVal.AssemblyBinaryName = fullName.Name;
             returnVal.AssemblyFullName = fullName.FullName;
             returnVal.AssemblyVersion = fullName.Version;
             PortableExecutableKinds peKind;
             ImageFileMachine machineType;
-            loadFromAssembly.ManifestModule.GetPEKind(out peKind, out machineType);
+            reflectionOnlyLoadFromAssembly.ManifestModule.GetPEKind(out peKind, out machineType);
             if (peKind == PortableExecutableKinds.ILOnly &&
                 machineType == ImageFileMachine.I386)
             {
@@ -119,7 +115,6 @@ namespace Wayfinder.DependencyResolver
                     if (targetFramework != null)
                     {
                         returnVal.AssemblyFramework = targetFramework.FrameworkName;
-                        returnVal.StructuredFrameworkVersion = new DotNetFrameworkVersion(targetFramework.FrameworkName);
                     }
 
                     AssemblyFileVersionAttribute fileVersion = loadFromAssembly.GetCustomAttribute<AssemblyFileVersionAttribute>();
@@ -134,9 +129,10 @@ namespace Wayfinder.DependencyResolver
                 }
             }
 
+            // List references from metadata only
             try
             {
-                foreach (AssemblyName name in loadFromAssembly.GetReferencedAssemblies().OrderBy((n) => n.Name))
+                foreach (AssemblyName name in reflectionOnlyLoadFromAssembly.GetReferencedAssemblies().OrderBy((n) => n.Name))
                 {
                     if (!string.Equals("mscorlib", name.Name, StringComparison.OrdinalIgnoreCase) &&
                         !string.Equals("System", name.Name, StringComparison.OrdinalIgnoreCase))
@@ -182,7 +178,7 @@ namespace Wayfinder.DependencyResolver
                     {
                         returnVal.ReferencedAssemblies.Add(new AssemblyReferenceName()
                         {
-                            AssemblyBinaryName = TrimAssemblyFileExtension(pInvokeDll),
+                            AssemblyBinaryName = UbiquitousHelpers.TrimAssemblyFileExtension(pInvokeDll),
                             ReferencedAssemblyVersion = null,
                             ReferenceType = AssemblyReferenceType.PInvoke,
                             AssemblyFullName = null

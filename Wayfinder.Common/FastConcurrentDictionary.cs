@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading;
 
-namespace Wayfinder.DependencyResolver
+namespace Wayfinder.Common
 {
     /// <summary>
     /// Implements a concurrent dictionary with "loose" concurrency rules. Specifically,

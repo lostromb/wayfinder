@@ -6,7 +6,7 @@ namespace Wayfinder.DependencyResolver
     using System.Reflection;
     using System.Runtime.InteropServices;
     using System.Runtime.Loader;
-    using Wayfinder.DependencyResolver.Logger;
+    using Wayfinder.Common.Logger;
 
     public class WayfinderPluginLoadContext : AssemblyLoadContext
     {

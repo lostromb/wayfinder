@@ -1,14 +1,15 @@
-﻿using System;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Wayfinder.Common;
+using Wayfinder.Common.Logger;
+using Wayfinder.Common.Nuget;
+using Wayfinder.Common.Schemas;
 using Wayfinder.DependencyResolver;
-using Wayfinder.DependencyResolver.Logger;
-using Wayfinder.DependencyResolver.Nuget;
-using Wayfinder.DependencyResolver.Schemas;
+using Wayfinder.DependencyResolver.Native;
 
 namespace Wayfinder.Tests
 {
@@ -16,7 +17,8 @@ namespace Wayfinder.Tests
     [DeploymentItem("testdata.zip")]
     public class AssemblyDumperTests
     {
-        private static AssemblyInspector _inspector;
+        private static NativeAssemblyInspector _nativeInspector;
+        private static AssemblyAnalyzer _analyzer;
 
         [ClassInitialize]
         public static void TestClassInitialize(TestContext context)
@@ -24,7 +26,12 @@ namespace Wayfinder.Tests
             // Unpack test data folder
             ZipFile.ExtractToDirectory("testdata.zip", Environment.CurrentDirectory, true);
             ILogger logger = new ConsoleLogger();
-            _inspector = new AssemblyInspector(logger);
+            _nativeInspector = new NativeAssemblyInspector(logger);
+            List<IAssemblyInspector> inspectors = new List<IAssemblyInspector>();
+            inspectors.Add(new NetCoreAssemblyInspector(logger, true));
+            inspectors.Add(new NetFrameworkAssemblyInspectorExeWrapper(logger, new FileInfo(@".\Wayfinder.DependencyResolver.NetFramework.exe")));
+            inspectors.Add(_nativeInspector);
+            _analyzer = new AssemblyAnalyzer(logger, inspectors);
         }
 
         [ClassCleanup]
@@ -40,14 +47,14 @@ namespace Wayfinder.Tests
             }
             catch (Exception) { }
 
-            _inspector.Dispose();
+            _nativeInspector?.Dispose();
         }
 
         [TestMethod]
         public void TestLoader_BasicManagedDll()
         {
             FileInfo inputFile = new FileInfo("testdata\\binaries\\Durandal.Win32.dll");
-            AssemblyData parsedData = _inspector.InspectSingleAssembly(inputFile, null);
+            AssemblyData parsedData = _analyzer.InspectSingleAssembly(inputFile, null);
             Assert.IsNotNull(parsedData);
             Assert.AreEqual("Durandal.Win32", parsedData.AssemblyBinaryName);
             Assert.AreEqual(".NETFramework,Version=v4.5", parsedData.AssemblyFramework);
@@ -88,7 +95,7 @@ namespace Wayfinder.Tests
         public void TestLoader_ManagedDllWithPInvoke()
         {
             FileInfo inputFile = new FileInfo("testdata\\binaries\\ManagedBass.dll");
-            AssemblyData parsedData = _inspector.InspectSingleAssembly(inputFile, null);
+            AssemblyData parsedData = _analyzer.InspectSingleAssembly(inputFile, null);
             Assert.IsNotNull(parsedData);
             Assert.AreEqual("ManagedBass", parsedData.AssemblyBinaryName);
             Assert.AreEqual(inputFile.FullName, parsedData.AssemblyFilePath.FullName);
@@ -116,7 +123,7 @@ namespace Wayfinder.Tests
         public void TestLoader_NativeDll_x64()
         {
             FileInfo inputFile = new FileInfo("testdata\\binaries\\bass.dll");
-            AssemblyData parsedData = _inspector.InspectSingleAssembly(inputFile, null);
+            AssemblyData parsedData = _analyzer.InspectSingleAssembly(inputFile, null);
             Assert.IsNotNull(parsedData);
             Assert.AreEqual("bass", parsedData.AssemblyBinaryName);
             Assert.AreEqual(inputFile.FullName, parsedData.AssemblyFilePath.FullName);
@@ -149,7 +156,7 @@ namespace Wayfinder.Tests
         public void TestLoader_NativeDll_x86()
         {
             FileInfo inputFile = new FileInfo("testdata\\binaries\\EvernoteIE.dll");
-            AssemblyData parsedData = _inspector.InspectSingleAssembly(inputFile, null);
+            AssemblyData parsedData = _analyzer.InspectSingleAssembly(inputFile, null);
             Assert.IsNotNull(parsedData);
             Assert.AreEqual("EvernoteIE", parsedData.AssemblyBinaryName);
             Assert.AreEqual(inputFile.FullName, parsedData.AssemblyFilePath.FullName);
@@ -179,7 +186,7 @@ namespace Wayfinder.Tests
             packageCache.Initialize();
 
             FileInfo inputFile = new FileInfo("testdata\\nuget cache\\bond.runtime.csharp\\5.3.1\\lib\\net45\\Bond.JSON.dll");
-            AssemblyData parsedData = _inspector.InspectSingleAssembly(inputFile, packageCache);
+            AssemblyData parsedData = _analyzer.InspectSingleAssembly(inputFile, packageCache);
             Assert.IsNotNull(parsedData);
             Assert.IsNotNull(parsedData.NugetSourcePackages);
             Assert.AreEqual(1, parsedData.NugetSourcePackages.Count);
@@ -191,7 +198,7 @@ namespace Wayfinder.Tests
         public void TestLoader_ManagedDllWithBindingRedirects()
         {
             FileInfo inputFile = new FileInfo(@"testdata\\binaries\\BasicResolvers.dll");
-            AssemblyData parsedData = _inspector.InspectSingleAssembly(inputFile, null);
+            AssemblyData parsedData = _analyzer.InspectSingleAssembly(inputFile, null);
             Assert.IsNotNull(parsedData);
             Assert.AreEqual("BasicResolvers", parsedData.AssemblyBinaryName);
             Assert.AreEqual(inputFile.FullName, parsedData.AssemblyFilePath.FullName);
@@ -236,7 +243,7 @@ namespace Wayfinder.Tests
             NugetPackageCache packageCache = new NugetPackageCache(false);
             packageCache.Initialize();
             DirectoryInfo inputDir = new DirectoryInfo(@"C:\Code\WebCrawler\bin");
-            ISet<DependencyGraphNode> graph = _inspector.BuildDependencyGraph(inputDir, packageCache);
+            ISet<DependencyGraphNode> graph = _analyzer.BuildDependencyGraph(inputDir, packageCache);
             Assert.IsNotNull(graph);
         }
     }
