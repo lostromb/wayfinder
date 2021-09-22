@@ -18,7 +18,7 @@ namespace Wayfinder.DependencyResolver
     public class AssemblyAnalyzer
     {
         private readonly IList<IAssemblyInspector> _inspectors;
-        private readonly IDictionary<FileInfo, AssemblyData> _resolvedAssemblyCache = new Dictionary<FileInfo, AssemblyData>();
+        private readonly FastConcurrentDictionary<FileInfo, AssemblyData> _resolvedAssemblyCache = new FastConcurrentDictionary<FileInfo, AssemblyData>();
         private readonly ILogger _logger;
 
         public AssemblyAnalyzer(ILogger logger, IList<IAssemblyInspector> inspectors)

@@ -70,8 +70,7 @@ namespace Wayfinder.UI.NetCore
         private GLTexture _textureExpandButton;
 
         private readonly Counter<GuidPair> _cachedLinePairs = new Counter<GuidPair>();
-
-
+        private bool _viewDirty = true;
 
         public MainWindow()
         {
@@ -81,8 +80,9 @@ namespace Wayfinder.UI.NetCore
 
             List<IAssemblyInspector> inspectors = new List<IAssemblyInspector>();
             _nativeInspector = new NativeAssemblyInspector(_logger);
-            inspectors.Add(new NetCoreAssemblyInspector(_logger, true));
+            // Inspectors are run in the order given here so be careful when refactoring.
             inspectors.Add(new NetFrameworkAssemblyInspectorExeWrapper(_logger, new FileInfo(@".\Wayfinder.DependencyResolver.NetFramework.exe")));
+            inspectors.Add(new NetCoreAssemblyInspector(_logger, true));
             inspectors.Add(_nativeInspector);
 
             _analyzer = new AssemblyAnalyzer(_logger, inspectors);
@@ -94,6 +94,7 @@ namespace Wayfinder.UI.NetCore
             var settings = new GLWpfControlSettings();
             settings.MajorVersion = 2;
             settings.MinorVersion = 0;
+            settings.RenderContinuously = false;
             Canvas.Start(settings);
             UpdateUiElements();
         }
@@ -101,6 +102,12 @@ namespace Wayfinder.UI.NetCore
         ~MainWindow()
         {
             Dispose(false);
+        }
+
+        private void InvalidateCanvas()
+        {
+            _viewDirty = true;
+            Canvas.InvalidateVisual();
         }
 
         private Task SaveDocumentInBackground(IRealTimeProvider realTime)
@@ -390,6 +397,13 @@ namespace Wayfinder.UI.NetCore
             Monitor.Enter(_mutex);
             try
             {
+                if (!_viewDirty)
+                {
+                    // Nothing changed on the UI; keep all existing buffers the same.
+                    return;
+                }
+                _viewDirty = false;
+
                 GL.ClearColor(0.9f, 0.9f, 0.9f, 1.0f);
                 GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
                 GL.MatrixMode(MatrixMode.Projection);
@@ -1189,6 +1203,7 @@ namespace Wayfinder.UI.NetCore
             _mouseDragStartVirtualCenterPoint = _viewCenter;
             _isHoldingRightMouse = true;
             Mouse.PrimaryDevice.Capture(Canvas, CaptureMode.Element);
+            InvalidateCanvas();
         }
 
         private void Canvas_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -1279,6 +1294,7 @@ namespace Wayfinder.UI.NetCore
             _mouseDragStartCanvasCenterPoint = clickPosition;
             _isHoldingLeftMouse = true;
             Mouse.PrimaryDevice.Capture(Canvas, CaptureMode.Element);
+            InvalidateCanvas();
         }
 
         private void RecursiveCloseComponents(UIComponent component)
@@ -1345,12 +1361,14 @@ namespace Wayfinder.UI.NetCore
             _isMovingComponent = false;
             _isResizingComponent = false;
             Mouse.PrimaryDevice.Capture(Canvas, CaptureMode.None);
+            InvalidateCanvas();
         }
 
         private void Canvas_MouseRightButtonUp(object sender, MouseButtonEventArgs e)
         {
             _isHoldingRightMouse = false;
             Mouse.PrimaryDevice.Capture(Canvas, CaptureMode.None);
+            InvalidateCanvas();
         }
 
         private void Canvas_MouseMove(object sender, MouseEventArgs e)
@@ -1366,6 +1384,8 @@ namespace Wayfinder.UI.NetCore
                 _viewCenter = new Point(
                     _mouseDragStartVirtualCenterPoint.X - (deltaX / _zoom),
                     _mouseDragStartVirtualCenterPoint.Y - (deltaY / _zoom));
+
+                InvalidateCanvas();
             }
             else if (_isHoldingLeftMouse)
             {
@@ -1439,6 +1459,8 @@ namespace Wayfinder.UI.NetCore
                 //            _viewCenter.Y + (deltaY / _zoom));
                 //    }
                 //}
+
+                InvalidateCanvas();
             }
         }
 
@@ -1447,6 +1469,7 @@ namespace Wayfinder.UI.NetCore
             // positive delta == scrolling up
             _zoom = _zoom * (1 + ((double)e.Delta / 800));
             // todo: alter center position so we can do directional zooming
+            InvalidateCanvas();
         }
 
         #endregion
@@ -1525,6 +1548,7 @@ namespace Wayfinder.UI.NetCore
                     {
                         _project = newProject;
                         RebuildUiComponents();
+                        InvalidateCanvas();
                     }
                     finally
                     {
@@ -1768,6 +1792,7 @@ namespace Wayfinder.UI.NetCore
             lock (_mutex)
             {
                 UpdateUIComponentVisibility(FilterTextBox.Text);
+                InvalidateCanvas();
             }
         }
 
@@ -1793,6 +1818,11 @@ namespace Wayfinder.UI.NetCore
             {
                 _nativeInspector?.Dispose();
             }
+        }
+
+        private void Window_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            InvalidateCanvas();
         }
     }
 }
