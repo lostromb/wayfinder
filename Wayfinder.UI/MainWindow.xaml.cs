@@ -107,7 +107,7 @@ namespace Wayfinder.UI.NetCore
         private void InvalidateCanvas()
         {
             _viewDirty = true;
-            Canvas.InvalidateVisual();
+            Canvas?.InvalidateVisual();
         }
 
         private Task SaveDocumentInBackground(IRealTimeProvider realTime)
@@ -1018,7 +1018,13 @@ namespace Wayfinder.UI.NetCore
                         }
                         else
                         {
-                            if (colorBy == ComponentColorBy.LibraryType)
+                            // Hack - Since alpha blending no longer works to distinguish filtered out components, we have to do this
+                            if (currentComponent.IsFilteredOut)
+                            {
+                                componentTopColor = new Color4(230f / 255f, 230f / 255f, 230f / 255f, alpha);
+                                componentBottomColor = new Color4(230f / 255f, 230f / 255f, 230f / 255f, alpha);
+                            }
+                            else if (colorBy == ComponentColorBy.LibraryType)
                             {
                                 ColorComponentByLibraryType(currentComponent, alpha, out componentBottomColor, out componentTopColor);
                             }
@@ -1821,6 +1827,16 @@ namespace Wayfinder.UI.NetCore
         }
 
         private void Window_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            InvalidateCanvas();
+        }
+
+        private void RadioButton_ColorByLibraryType_Checked(object sender, RoutedEventArgs e)
+        {
+            InvalidateCanvas();
+        }
+
+        private void RadioButton_ColorByFrameworkVersion_Checked(object sender, RoutedEventArgs e)
         {
             InvalidateCanvas();
         }

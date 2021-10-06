@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:Wayfinder.UI.NetCore"
         xmlns:glWpfControl="clr-namespace:OpenTK.Wpf;assembly=GLWpfControl"
         mc:Ignorable="d"
-        Title="Wayfinder v0.7" Height="800" Width="1200" MinHeight="300" MinWidth="400" Loaded="Window_Loaded" Closing="Window_Closing" SizeChanged="Window_SizeChanged">
+        Title="Wayfinder v0.71" Height="800" Width="1200" MinHeight="300" MinWidth="400" Loaded="Window_Loaded" Closing="Window_Closing" SizeChanged="Window_SizeChanged">
     <DockPanel>
         <StackPanel Name="TitleBar"
             DockPanel.Dock="Top"
@@ -22,8 +22,8 @@
                 <Label Content="Color By" />
             </StackPanel>
             <StackPanel Orientation="Vertical" VerticalAlignment="Center" >
-                <RadioButton Content="Library Type" Name="RadioButton_ColorByLibraryType" GroupName="ColorBy" IsChecked="true"></RadioButton>
-                <RadioButton Content="Framework Version" Name="RadioButton_ColorByFrameworkVersion" GroupName="ColorBy" ></RadioButton>
+                <RadioButton Content="Library Type" Name="RadioButton_ColorByLibraryType" GroupName="ColorBy" IsChecked="true" Checked="RadioButton_ColorByLibraryType_Checked"></RadioButton>
+                <RadioButton Content="Framework Version" Name="RadioButton_ColorByFrameworkVersion" GroupName="ColorBy" Checked="RadioButton_ColorByFrameworkVersion_Checked" ></RadioButton>
             </StackPanel>
         </StackPanel>
         <StackPanel Name="Sidebar"
