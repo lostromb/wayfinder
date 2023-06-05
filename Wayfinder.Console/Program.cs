@@ -22,7 +22,7 @@ namespace Wayfinder.Console
                 inspectors.Add(nativeInspector);
 
                 AssemblyAnalyzer analyzer = new AssemblyAnalyzer(logger, inspectors);
-                AssemblyData d = analyzer.InspectSingleAssembly(new FileInfo(@"C:\Code\cortana-ux-bing-answers\services\BingAnswers\src\Service\bin\x64\Debug\net461\Bond.JSON.dll"), null);
+                AssemblyData d = analyzer.InspectSingleAssembly(new FileInfo(@"C:\Code\Durandal\Tools\Prototype.NetCore\bin\Debug\net7.0-windows\Durandal.Extensions.NativeAudio.dll"), null);
                 if (d != null)
                 {
                     d.ToString();

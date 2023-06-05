@@ -1504,47 +1504,55 @@ namespace Wayfinder.UI.NetCore
                     {
                         StatusLabel.Content = "Inspecting directory " + path + ", this can take a few minutes!";
                         DirectoryInfo inputDir = new DirectoryInfo(path);
-                        newProject = await Task.Run(() =>
+                        try
                         {
-                            try
+                            newProject = await Task.Run(() =>
                             {
                                 ISet<DependencyGraphNode> graph = _analyzer.BuildDependencyGraph(inputDir, _packageCache);
                                 return DependencyGraphConverter.ConvertDependencyGraphToProject(graph, _logger);
-                            }
-                            catch (Exception ex)
-                            {
-                                Debug.WriteLine(ex.Message);
-                                return null;
-                            }
-                        });
+                            });
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.WriteLine(ex.ToString());
+                            StatusLabel.Content = ex.Message;
+                            return;
+                        }
+
+                        if (newProject == null || newProject.Components.Count <= 1)
+                        {
+                            StatusLabel.Content = "No assemblies found at " + path;
+                            return;
+                        }
                     }
                     else if (File.Exists(path))
                     {
                         StatusLabel.Content = "Inspecting file " + path + ", please wait!";
                         FileInfo inputFile = new FileInfo(path);
-                        newProject = await Task.Run(() =>
+                        try
                         {
-                            try
+                            newProject = await Task.Run(() =>
                             {
                                 ISet<DependencyGraphNode> graph = _analyzer.BuildDependencyGraph(inputFile, _packageCache);
                                 return DependencyGraphConverter.ConvertDependencyGraphToProject(graph, _logger);
-                            }
-                            catch (Exception ex)
-                            {
-                                Debug.WriteLine(ex.Message);
-                                return null;
-                            }
-                        });
+                            });
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.WriteLine(ex.ToString());
+                            StatusLabel.Content = ex.Message;
+                            return;
+                        }
+
+                        if (newProject == null || newProject.Components.Count <= 1)
+                        {
+                            StatusLabel.Content = "No assemblies found at " + path;
+                            return;
+                        }
                     }
                     else
                     {
                         StatusLabel.Content = "File / directory not found: " + path;
-                        return;
-                    }
-
-                    if (newProject == null || newProject.Components.Count <= 1)
-                    {
-                        StatusLabel.Content = "No assemblies found at " + path;
                         return;
                     }
 

@@ -176,61 +176,7 @@ namespace Wayfinder.DependencyResolver
             }
         }
 
-        private static bool AttemptBind(
-            AssemblyData candidateAssembly,
-            string targetAssemblyName,
-            BinaryType targetBinaryType,
-            Version targetVersion,
-            string bindingRedirectCodeBasePath,
-            ILogger logger)
-        {
-            // Check assembly name
-            if (!string.Equals(targetAssemblyName, candidateAssembly.AssemblyBinaryName, StringComparison.OrdinalIgnoreCase))
-            {
-                return false;
-            }
-
-            // Check binary type
-            if (targetBinaryType != candidateAssembly.AssemblyType)
-            {
-                logger.Log(string.Format("Failed bind to {0}: Wrong binary type (expected {1} got {2})",
-                    candidateAssembly.AssemblyFilePath == null ? candidateAssembly.AssemblyBinaryName : candidateAssembly.AssemblyFilePath.FullName,
-                    Enum.GetName(typeof(BinaryType), targetBinaryType),
-                    Enum.GetName(typeof(BinaryType), candidateAssembly.AssemblyType)),
-                    LogLevel.Wrn);
-                return false;
-            }
-
-            // Check major version match
-            if (targetVersion != null &&
-                candidateAssembly.AssemblyVersion != null &&
-                candidateAssembly.AssemblyVersion.Major != targetVersion.Major)
-            {
-                logger.Log(string.Format("While binding to {0}: Major version mismatch (expected {1} got {2})",
-                    candidateAssembly.AssemblyFilePath == null ? candidateAssembly.AssemblyBinaryName : candidateAssembly.AssemblyFilePath.FullName,
-                    targetVersion,
-                    candidateAssembly.AssemblyVersion),
-                    LogLevel.Wrn);
-                // don't actually treat it as an error though
-                //return false;
-            }
-
-            // Check codeBase restraints
-            if (!string.IsNullOrEmpty(bindingRedirectCodeBasePath))
-            {
-                FileInfo expectedFileName = new FileInfo(Path.Combine(candidateAssembly.AssemblyFilePath.DirectoryName, bindingRedirectCodeBasePath));
-                if (expectedFileName != candidateAssembly.AssemblyFilePath)
-                {
-                    logger.Log(string.Format("Failed bind to {0}: codeBase mismatch (expected {1})",
-                        candidateAssembly.AssemblyFilePath == null ? candidateAssembly.AssemblyBinaryName : candidateAssembly.AssemblyFilePath.FullName,
-                        expectedFileName),
-                        LogLevel.Wrn);
-                    return false;
-                }
-            }
-
-            return true;
-        }
+        
 
         private class AssemblyInspectorWorkItem : ThreadedWorkItem<AssemblyData>
         {
@@ -312,7 +258,7 @@ namespace Wayfinder.DependencyResolver
                             continue;
                         }
 
-                        if (AttemptBind(candidateNode.ThisAssembly, targetAssemblyName, targetBinaryType, targetVersion, reference.BindingRedirectCodeBasePath, _logger))
+                        if (BindingEmulator.AttemptBind(candidateNode.ThisAssembly, targetAssemblyName, targetBinaryType, targetVersion, reference.BindingRedirectCodeBasePath, _logger))
                         {
                             targetNode = candidateNode;
                             _logger.Log("Successful bind to " + candidateNode.ThisAssembly.AssemblyFilePath.FullName);
@@ -325,7 +271,7 @@ namespace Wayfinder.DependencyResolver
                         // Can't resolve this reference. Does a stub node already exist?
                         foreach (DependencyGraphNode existingStubNode in stubNodes)
                         {
-                            if (AttemptBind(existingStubNode.ThisAssembly, targetAssemblyName, targetBinaryType, targetVersion, string.Empty, _logger))
+                            if (BindingEmulator.AttemptBind(existingStubNode.ThisAssembly, targetAssemblyName, targetBinaryType, targetVersion, string.Empty, _logger))
                             {
                                 if (targetBinaryType == BinaryType.Managed)
                                 {
@@ -379,7 +325,15 @@ namespace Wayfinder.DependencyResolver
                             targetVersion > targetNode.ThisAssembly.AssemblyVersion)
                         {
                             sourceNode.Errors.Add("This assembly depends on " + targetNode.ThisAssembly.AssemblyBinaryName + " v" + targetVersion + ", but a lower version was actually resolved");
-                        }    
+                        }
+
+                        // And add an error if the framework types between the two references are illegal
+                        if (sourceNode?.ThisAssembly?.StructuredFrameworkVersion != null &&
+                            targetNode?.ThisAssembly?.StructuredFrameworkVersion != null &&
+                            !BindingEmulator.IsCrossFrameworkReferenceLegal(sourceNode.ThisAssembly.StructuredFrameworkVersion, targetNode.ThisAssembly.StructuredFrameworkVersion))
+                        {
+                            sourceNode.Errors.Add($"This assembly depends on {targetNode.ThisAssembly.AssemblyBinaryName} {targetNode.ThisAssembly.StructuredFrameworkVersion} which is a higher-level framework");
+                        }
                     }
 
                     sourceNode.Dependencies.Add(targetNode);

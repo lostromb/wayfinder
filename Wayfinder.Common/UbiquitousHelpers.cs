@@ -158,11 +158,5 @@ namespace Wayfinder.Common
 
             return minWeight / pathLength / insertWeight;
         }
-
-        public static bool CanBindReferenceExactly(AssemblyReferenceName reference, AssemblyData candidateAssembly)
-        {
-            return string.Equals(reference.AssemblyBinaryName, candidateAssembly.AssemblyBinaryName, StringComparison.OrdinalIgnoreCase) &&
-                reference.ReferencedAssemblyVersion == candidateAssembly.AssemblyVersion;
-        }
     }
 }

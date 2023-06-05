@@ -193,5 +193,9 @@ namespace Wayfinder.Common.Schemas
         public static readonly Version VERSION_5_0 = new Version("5.0");
 
         public static readonly Version VERSION_6_0 = new Version("6.0");
+
+        public static readonly Version VERSION_7_0 = new Version("7.0");
+
+        public static readonly Version VERSION_8_0 = new Version("8.0");
     }
 }
